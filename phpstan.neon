@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - Classes
+        - Tests
+    excludePaths:
+        - vendor
+    tmpDir: .phpstan-cache
+    treatPhpDocTypesAsCertain: false

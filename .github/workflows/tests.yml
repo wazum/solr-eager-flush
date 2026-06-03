@@ -1,0 +1,111 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-quality:
+    name: Code quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, json, dom, simplexml
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-quality-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-quality-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress --prefer-dist
+
+      - name: PHP CS Fixer
+        run: composer cs:check
+
+      - name: PHPStan
+        run: composer phpstan
+
+      - name: Psalm
+        run: composer psalm
+
+  composer-validate:
+    name: composer validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - run: composer validate --strict
+
+  tests:
+    name: Tests (TYPO3 ${{ matrix.typo3 }}, PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.2', typo3: '^13.4', stability: stable }
+          - { php: '8.3', typo3: '^13.4', stability: stable }
+          - { php: '8.4', typo3: '^13.4', stability: stable }
+          - { php: '8.3', typo3: '^14.3', stability: beta }
+          - { php: '8.4', typo3: '^14.3', stability: beta }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, mbstring, json, dom, simplexml, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-php${{ matrix.php }}-typo3${{ matrix.typo3 }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-php${{ matrix.php }}-typo3${{ matrix.typo3 }}-
+            composer-${{ runner.os }}-php${{ matrix.php }}-
+
+      - name: Allow pre-release dependencies (ext:solr is pre-release on TYPO3 14)
+        if: matrix.stability == 'beta'
+        run: composer config minimum-stability beta
+
+      - name: Pin TYPO3 ${{ matrix.typo3 }}
+        run: composer require --no-update "typo3/cms-core:${{ matrix.typo3 }}" "typo3/cms-scheduler:${{ matrix.typo3 }}"
+
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress --prefer-dist
+
+      - name: Unit tests
+        run: composer test:unit
+
+      - name: Functional tests
+        run: composer test:functional

@@ -1,0 +1,9 @@
+"pages",,,,,,,,
+,"uid","pid","title","slug","doktype","is_siteroot","tx_solr_canonical_pid","sys_language_uid"
+,1,0,"Root","/",1,1,0,0
+,10,1,"Page 10","/page-10",1,0,0,0
+,11,1,"Page 11","/page-11",1,0,0,0
+,12,1,"Page 12","/page-12",1,0,0,0
+,20,1,"Page 20","/page-20",1,0,0,0
+,21,1,"Page 21","/page-21",1,0,0,0
+,30,1,"Page 30","/page-30",1,0,0,0

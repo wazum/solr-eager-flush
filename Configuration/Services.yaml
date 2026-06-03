@@ -1,0 +1,31 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Wazum\SolrEagerFlush\:
+        resource: '../Classes/*'
+
+    Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
+        factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']
+        arguments:
+            $core: '@TYPO3\CMS\Core\Configuration\ExtensionConfiguration'
+
+    _instanceof:
+        Wazum\SolrEagerFlush\Gate\EagerFlushGate:
+            tags: ['solr_eager_flush.gate']
+
+    Wazum\SolrEagerFlush\EventListener\ScopedItemFilterListener:
+        tags:
+            - name: event.listener
+              identifier: 'solr-eager-flush/scoped-item-filter'
+              event: ApacheSolrForTypo3\Solr\Event\Indexing\BeforeItemsAreIndexedEvent
+
+    Wazum\SolrEagerFlush\EventListener\EagerFlushListener:
+        arguments:
+            $gates: !tagged_iterator solr_eager_flush.gate
+        tags:
+            - name: event.listener
+              identifier: 'solr-eager-flush/eager-flush'
+              event: ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\EventListener\Events\ProcessingFinishedEvent

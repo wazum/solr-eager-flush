@@ -1,0 +1,8 @@
+# cat=basic/enable; type=options[both=both,pages=pages,records=records]; label=Type filter: which Item types to eager-flush
+typeFilter = both
+
+# cat=basic; type=int+; label=Index queue limit: skip eager-flush if pending tx_solr_indexqueue_item count exceeds this number.
+indexQueueLimit = 5
+
+# cat=basic; type=int+; label=Delta max: maximum tx_solr_indexqueue_item rows to index per eager-flush invocation, per affected site.
+deltaMax = 10

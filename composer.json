@@ -1,0 +1,69 @@
+{
+    "name": "wazum/solr-eager-flush",
+    "type": "typo3-cms-extension",
+    "description": "Eager Solr index flush on save with pressure gating for TYPO3 v13 (ext:solr monitoringType=0)",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Wolfgang Klinger",
+            "email": "wolfgang@wazum.com",
+            "role": "Lead Developer"
+        }
+    ],
+    "keywords": ["typo3", "solr", "ext-solr", "indexing", "queue"],
+    "require": {
+        "php": "^8.2",
+        "typo3/cms-core": "^13.4 || ^14.3",
+        "typo3/cms-scheduler": "^13.4 || ^14.3",
+        "apache-solr-for-typo3/solr": "^13.0 || ^14.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5",
+        "typo3/testing-framework": "^9.0",
+        "friendsofphp/php-cs-fixer": "^3.94",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "vimeo/psalm": "^6.16"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wazum\\SolrEagerFlush\\": "Classes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Wazum\\SolrEagerFlush\\Tests\\": "Tests/"
+        }
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "solr_eager_flush",
+            "version": "0.1.0",
+            "Package": {
+                "providesPackages": {}
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "typo3/cms-composer-installers": true,
+            "typo3/class-alias-loader": true
+        }
+    },
+    "scripts": {
+        "test:unit": "phpunit -c Tests/phpunit.xml --testsuite=unit",
+        "test:functional": [
+            "Composer\\Config::disableProcessTimeout",
+            "typo3DatabaseDriver=pdo_sqlite phpunit --bootstrap vendor/typo3/testing-framework/Resources/Core/Build/FunctionalTestsBootstrap.php -c Tests/phpunit.xml --testsuite=functional"
+        ],
+        "test": ["@test:unit", "@test:functional"],
+        "cs:check": "php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff",
+        "cs:fix": "php-cs-fixer fix --config=.php-cs-fixer.php",
+        "phpstan": "phpstan analyse --no-progress",
+        "psalm": "psalm --no-progress",
+        "quality": ["@cs:check", "@phpstan", "@psalm"]
+    }
+}
