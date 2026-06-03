@@ -90,6 +90,39 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([1], $result->failedRoots);
     }
 
+    public function testFlushesOnlyTheScopedRootWhenGiven(): void
+    {
+        $this->insertPendingItem(root: 1);
+        $this->insertPendingItem(root: 2);
+        $indexer = $this->recordingIndexer();
+
+        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10, onlyRootPageId: 1);
+
+        self::assertSame([1], $indexer->attempted, 'Only the scoped root is indexed');
+        self::assertSame([1], $result->succeededRoots);
+    }
+
+    public function testFallsBackToAllRootsWhenScopeIsNull(): void
+    {
+        $this->insertPendingItem(root: 1);
+        $this->insertPendingItem(root: 2);
+        $indexer = $this->recordingIndexer();
+
+        $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10, onlyRootPageId: null);
+
+        self::assertEqualsCanonicalizing([1, 2], $indexer->attempted, 'Unresolved scope flushes all pending roots');
+    }
+
+    public function testScopedRootWithNoPendingItemsIndexesNothing(): void
+    {
+        $this->insertPendingItem(root: 1);
+        $indexer = $this->recordingIndexer();
+
+        $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10, onlyRootPageId: 999);
+
+        self::assertSame([], $indexer->attempted, 'A resolved-but-not-pending root does not fall back to all roots');
+    }
+
     private function buildDrainer(EagerFlushRunContext $runContext, SiteIndexer $indexer): IndexQueueDrainer
     {
         return new IndexQueueDrainer(

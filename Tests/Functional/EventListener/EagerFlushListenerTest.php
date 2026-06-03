@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wazum\SolrEagerFlush\Tests\Functional\EventListener;
 
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\EventListener\Events\ProcessingFinishedEvent;
+use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\DataUpdateEventInterface;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\RecordUpdatedEvent;
 use Closure;
 use Psr\Log\AbstractLogger;
@@ -18,6 +19,7 @@ use Wazum\SolrEagerFlush\Drainer\DrainResult;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\EventListener\EagerFlushListener;
 use Wazum\SolrEagerFlush\Gate\EagerFlushGate;
+use Wazum\SolrEagerFlush\Site\SiteRootResolver;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
@@ -90,6 +92,22 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertTrue($drainerCalled, 'Drainer was called (and threw, but exception was swallowed)');
     }
 
+    public function testPassesResolvedSiteRootToDrainer(): void
+    {
+        $capturedRoot = -1;
+        $listener = $this->buildListener(
+            gates: [$this->gate(true)],
+            onDrain: static function (int $deltaMax, ?int $onlyRootPageId) use (&$capturedRoot): void {
+                $capturedRoot = $onlyRootPageId;
+            },
+            rootResolver: $this->resolverReturning(42),
+        );
+
+        $listener->__invoke($this->makeFinishedEvent());
+
+        self::assertSame(42, $capturedRoot, 'Listener must scope the drain to the resolved site root');
+    }
+
     public function testLogsWarningWhenDrainReportsFailures(): void
     {
         $logger = new class extends AbstractLogger {
@@ -122,6 +140,7 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         Closure $onDrain,
         DrainResult $result = new DrainResult(),
         LoggerInterface $logger = new NullLogger(),
+        ?SiteRootResolver $rootResolver = null,
     ): EagerFlushListener {
         return new EagerFlushListener(
             gates: $gates,
@@ -131,13 +150,14 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
                     private readonly DrainResult $result,
                 ) {}
 
-                public function drain(int $deltaMax): DrainResult
+                public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
                 {
-                    ($this->onDrain)($deltaMax);
+                    ($this->onDrain)($deltaMax, $onlyRootPageId);
 
                     return $this->result;
                 }
             },
+            rootResolver: $rootResolver ?? $this->resolverReturning(null),
             config: new ExtensionConfiguration(
                 typeFilter: TypeFilterMode::Both,
                 indexQueueLimit: 5,
@@ -155,6 +175,18 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
             public function shouldProceed(): bool
             {
                 return $this->proceed;
+            }
+        };
+    }
+
+    private function resolverReturning(?int $root): SiteRootResolver
+    {
+        return new class($root) implements SiteRootResolver {
+            public function __construct(private readonly ?int $root) {}
+
+            public function resolveRootPageId(DataUpdateEventInterface $event): ?int
+            {
+                return $this->root;
             }
         };
     }

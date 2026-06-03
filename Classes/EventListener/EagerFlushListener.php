@@ -10,6 +10,7 @@ use Throwable;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\Gate\EagerFlushGate;
+use Wazum\SolrEagerFlush\Site\SiteRootResolver;
 
 final readonly class EagerFlushListener
 {
@@ -19,6 +20,7 @@ final readonly class EagerFlushListener
     public function __construct(
         private iterable $gates,
         private IndexQueueDrainer $drainer,
+        private SiteRootResolver $rootResolver,
         private ExtensionConfiguration $config,
         private LoggerInterface $logger,
     ) {}
@@ -35,7 +37,8 @@ final readonly class EagerFlushListener
             }
 
             $start = microtime(true);
-            $result = $this->drainer->drain($this->config->deltaMax);
+            $onlyRootPageId = $this->rootResolver->resolveRootPageId($event->getDataUpdateEvent());
+            $result = $this->drainer->drain($this->config->deltaMax, $onlyRootPageId);
             $context = [
                 'duration_ms' => (int) round((microtime(true) - $start) * 1000.0),
                 'succeeded' => $result->succeededRoots,

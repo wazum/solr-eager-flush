@@ -19,9 +19,12 @@ class IndexQueueDrainer
         private readonly SiteIndexer $siteIndexer,
     ) {}
 
-    public function drain(int $deltaMax): DrainResult
+    public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
     {
         $rootPids = $this->affectedRootPids();
+        if (null !== $onlyRootPageId) {
+            $rootPids = array_values(array_intersect($rootPids, [$onlyRootPageId]));
+        }
         if ([] === $rootPids) {
             return new DrainResult();
         }

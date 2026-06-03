@@ -9,6 +9,8 @@ services:
 
     Wazum\SolrEagerFlush\Indexing\SiteIndexer: '@Wazum\SolrEagerFlush\Indexing\IndexServiceSiteIndexer'
 
+    Wazum\SolrEagerFlush\Site\SiteRootResolver: '@Wazum\SolrEagerFlush\Site\CoreSiteRootResolver'
+
     Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
         factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']
         arguments:
