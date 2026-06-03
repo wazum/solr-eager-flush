@@ -108,6 +108,22 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertSame(42, $capturedRoot, 'Listener must scope the drain to the resolved site root');
     }
 
+    public function testDefersToSchedulerWhenSiteCannotBeResolved(): void
+    {
+        $drainerCalled = false;
+        $listener = $this->buildListener(
+            gates: [$this->gate(true)],
+            onDrain: static function () use (&$drainerCalled): void {
+                $drainerCalled = true;
+            },
+            rootResolver: $this->resolverReturning(null),
+        );
+
+        $listener->__invoke($this->makeFinishedEvent());
+
+        self::assertFalse($drainerCalled, 'An unresolved site must defer to the scheduler, never fan out to all roots');
+    }
+
     public function testLogsWarningWhenDrainReportsFailures(): void
     {
         $logger = new class extends AbstractLogger {
@@ -157,7 +173,7 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
                     return $this->result;
                 }
             },
-            rootResolver: $rootResolver ?? $this->resolverReturning(null),
+            rootResolver: $rootResolver ?? $this->resolverReturning(1),
             config: new ExtensionConfiguration(
                 typeFilter: TypeFilterMode::Both,
                 indexQueueLimit: 5,

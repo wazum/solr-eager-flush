@@ -36,9 +36,15 @@ final readonly class EagerFlushListener
                 }
             }
 
+            $rootPageId = $this->rootResolver->resolveRootPageId($event->getDataUpdateEvent());
+            if (null === $rootPageId) {
+                $this->logger->debug('eager-flush skipped', ['reason' => 'site-unresolved']);
+
+                return;
+            }
+
             $start = microtime(true);
-            $onlyRootPageId = $this->rootResolver->resolveRootPageId($event->getDataUpdateEvent());
-            $result = $this->drainer->drain($this->config->deltaMax, $onlyRootPageId);
+            $result = $this->drainer->drain($this->config->deltaMax, $rootPageId);
             $context = [
                 'duration_ms' => (int) round((microtime(true) - $start) * 1000.0),
                 'succeeded' => $result->succeededRoots,
