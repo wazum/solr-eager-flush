@@ -1,4 +1,8 @@
-# Solr Eager Flush for TYPO3
+<p align="center">
+  <img src="Resources/Public/Icons/Extension.svg" alt="Solr Eager Flush" width="80" height="80">
+</p>
+
+<h1 align="center">Solr Eager Flush for TYPO3</h1>
 
 [![Tests](https://github.com/wazum/solr-eager-flush/actions/workflows/tests.yml/badge.svg)](https://github.com/wazum/solr-eager-flush/actions/workflows/tests.yml)
 [![Packagist Version](https://img.shields.io/packagist/v/wazum/solr-eager-flush.svg)](https://packagist.org/packages/wazum/solr-eager-flush)
