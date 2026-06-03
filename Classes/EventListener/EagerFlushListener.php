@@ -51,9 +51,13 @@ final readonly class EagerFlushListener
                 'failed' => $result->failedRoots,
             ];
 
-            $result->hasFailures()
-                ? $this->logger->warning('eager-flush completed with failures', $context)
-                : $this->logger->info('eager-flush completed', $context);
+            if (!$result->hasFailures()) {
+                $this->logger->info('eager-flush completed', $context);
+
+                return;
+            }
+
+            $this->logger->warning('eager-flush completed with failures', $context + ['reasons' => $result->failureReasons]);
         } catch (Throwable $e) {
             $this->logger->error('eager-flush failed', ['exception' => $e]);
         }

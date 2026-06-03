@@ -92,6 +92,23 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([1], $result->failedRoots);
     }
 
+    public function testRecordsFailureReasonForThrowingRoot(): void
+    {
+        $this->insertPendingItem(root: 1);
+        $indexer = new class implements SiteIndexer {
+            public function index(int $rootPageId, int $limit): bool
+            {
+                throw new RuntimeException('solr exploded');
+            }
+        };
+
+        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10);
+
+        self::assertSame([1], $result->failedRoots);
+        self::assertArrayHasKey(1, $result->failureReasons);
+        self::assertStringContainsString('solr exploded', $result->failureReasons[1]);
+    }
+
     public function testFlushesOnlyTheScopedRootWhenGiven(): void
     {
         $this->insertPendingItem(root: 1);

@@ -30,6 +30,7 @@ class IndexQueueDrainer
 
         $succeeded = [];
         $failed = [];
+        $failureReasons = [];
 
         $this->runContext->enter();
         try {
@@ -41,18 +42,22 @@ class IndexQueueDrainer
                     continue;
                 }
                 try {
-                    $this->siteIndexer->index($rootPid, $deltaMax)
-                        ? $succeeded[] = $rootPid
-                        : $failed[] = $rootPid;
-                } catch (Throwable) {
+                    if ($this->siteIndexer->index($rootPid, $deltaMax)) {
+                        $succeeded[] = $rootPid;
+                        continue;
+                    }
                     $failed[] = $rootPid;
+                    $failureReasons[$rootPid] = 'IndexService::indexItems() reported failure';
+                } catch (Throwable $e) {
+                    $failed[] = $rootPid;
+                    $failureReasons[$rootPid] = $e::class . ': ' . $e->getMessage();
                 }
             }
         } finally {
             $this->runContext->leave();
         }
 
-        return new DrainResult($succeeded, $failed);
+        return new DrainResult($succeeded, $failed, $failureReasons);
     }
 
     /**
