@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-03
+
 ### Changed
 - Default `typeFilter` is now `records` instead of `both`; pages are opt-in via `pages`/`both`. ext:solr indexes a page by rendering it, which might be too heavy to run synchronously on every save.
 
@@ -24,5 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Compatibility
 - TYPO3 13.4 LTS and 14.3+, PHP 8.2–8.4. On TYPO3 14, `apache-solr-for-typo3/solr` is currently a pre-release.
 
-[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.0.0...HEAD
+[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.1.0
 [1.0.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.0.0
