@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Drainer;
 
-use ApacheSolrForTypo3\Solr\Domain\Index\IndexService;
-use ApacheSolrForTypo3\Solr\Domain\Site\SiteRepository;
 use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
 use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
 use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
 
@@ -17,31 +15,36 @@ class IndexQueueDrainer
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly PendingItemPredicate $predicate,
-        private readonly SiteRepository $siteRepository,
         private readonly EagerFlushRunContext $runContext,
+        private readonly SiteIndexer $siteIndexer,
     ) {}
 
-    public function drain(int $deltaMax): void
+    public function drain(int $deltaMax): DrainResult
     {
         $rootPids = $this->affectedRootPids();
         if ([] === $rootPids) {
-            return;
+            return new DrainResult();
         }
+
+        $succeeded = [];
+        $failed = [];
 
         $this->runContext->enter();
         try {
             foreach ($rootPids as $rootPid) {
                 try {
-                    $site = $this->siteRepository->getSiteByRootPageId($rootPid);
+                    $this->siteIndexer->index($rootPid, $deltaMax)
+                        ? $succeeded[] = $rootPid
+                        : $failed[] = $rootPid;
                 } catch (Throwable) {
-                    continue;
+                    $failed[] = $rootPid;
                 }
-                GeneralUtility::makeInstance(IndexService::class, $site)
-                    ->indexItems($deltaMax);
             }
         } finally {
             $this->runContext->leave();
         }
+
+        return new DrainResult($succeeded, $failed);
     }
 
     /**

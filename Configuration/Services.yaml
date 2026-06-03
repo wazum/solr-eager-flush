@@ -7,6 +7,8 @@ services:
     Wazum\SolrEagerFlush\:
         resource: '../Classes/*'
 
+    Wazum\SolrEagerFlush\Indexing\SiteIndexer: '@Wazum\SolrEagerFlush\Indexing\IndexServiceSiteIndexer'
+
     Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
         factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']
         arguments:

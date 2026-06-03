@@ -7,9 +7,14 @@ namespace Wazum\SolrEagerFlush\Tests\Functional\EventListener;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\EventListener\Events\ProcessingFinishedEvent;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\RecordUpdatedEvent;
 use Closure;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use Stringable;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
+use Wazum\SolrEagerFlush\Drainer\DrainResult;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\EventListener\EagerFlushListener;
 use Wazum\SolrEagerFlush\Gate\EagerFlushGate;
@@ -85,21 +90,52 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertTrue($drainerCalled, 'Drainer was called (and threw, but exception was swallowed)');
     }
 
+    public function testLogsWarningWhenDrainReportsFailures(): void
+    {
+        $logger = new class extends AbstractLogger {
+            /** @var list<string> */
+            public array $levels = [];
+
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->levels[] = (string) $level;
+            }
+        };
+        $listener = $this->buildListener(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {},
+            result: new DrainResult(succeededRoots: [1], failedRoots: [2]),
+            logger: $logger,
+        );
+
+        $listener->__invoke($this->makeFinishedEvent());
+
+        self::assertContains(LogLevel::WARNING, $logger->levels, 'A drain with failures must be logged as a warning');
+        self::assertNotContains(LogLevel::INFO, $logger->levels);
+    }
+
     /**
      * @param list<EagerFlushGate> $gates
      */
     private function buildListener(
         array $gates,
         Closure $onDrain,
+        DrainResult $result = new DrainResult(),
+        LoggerInterface $logger = new NullLogger(),
     ): EagerFlushListener {
         return new EagerFlushListener(
             gates: $gates,
-            drainer: new class($onDrain) extends IndexQueueDrainer {
-                public function __construct(private readonly Closure $onDrain) {}
+            drainer: new class($onDrain, $result) extends IndexQueueDrainer {
+                public function __construct(
+                    private readonly Closure $onDrain,
+                    private readonly DrainResult $result,
+                ) {}
 
-                public function drain(int $deltaMax): void
+                public function drain(int $deltaMax): DrainResult
                 {
                     ($this->onDrain)($deltaMax);
+
+                    return $this->result;
                 }
             },
             config: new ExtensionConfiguration(
@@ -107,7 +143,7 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
                 indexQueueLimit: 5,
                 deltaMax: 10,
             ),
-            logger: new NullLogger(),
+            logger: $logger,
         );
     }
 

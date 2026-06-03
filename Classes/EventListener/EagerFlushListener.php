@@ -35,10 +35,16 @@ final readonly class EagerFlushListener
             }
 
             $start = microtime(true);
-            $this->drainer->drain($this->config->deltaMax);
-            $this->logger->info('eager-flush completed', [
+            $result = $this->drainer->drain($this->config->deltaMax);
+            $context = [
                 'duration_ms' => (int) round((microtime(true) - $start) * 1000.0),
-            ]);
+                'succeeded' => $result->succeededRoots,
+                'failed' => $result->failedRoots,
+            ];
+
+            $result->hasFailures()
+                ? $this->logger->warning('eager-flush completed with failures', $context)
+                : $this->logger->info('eager-flush completed', $context);
         } catch (Throwable $e) {
             $this->logger->error('eager-flush failed', ['exception' => $e]);
         }
