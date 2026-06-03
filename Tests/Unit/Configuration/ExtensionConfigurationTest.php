@@ -70,6 +70,17 @@ final class ExtensionConfigurationTest extends TestCase
         self::assertSame(10, $config->deltaMax);
     }
 
+    public function testClampsDeltaMaxUpToIndexQueueLimit(): void
+    {
+        $core = $this->createMock(Core::class);
+        $core->method('get')->willReturn(['indexQueueLimit' => '8', 'deltaMax' => '3']);
+
+        $config = ExtensionConfiguration::fromCore($core);
+
+        self::assertSame(8, $config->indexQueueLimit);
+        self::assertSame(8, $config->deltaMax, 'deltaMax is raised to indexQueueLimit to avoid type-filter starvation');
+    }
+
     public function testConstructorEnforcesPositiveBounds(): void
     {
         $this->expectException(InvalidArgumentException::class);

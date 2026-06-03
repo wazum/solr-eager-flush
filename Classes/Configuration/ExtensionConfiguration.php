@@ -31,13 +31,17 @@ final readonly class ExtensionConfiguration
         $raw = \is_array($raw) ? $raw : [];
 
         $mode = TypeFilterMode::tryFrom((string) ($raw['typeFilter'] ?? 'both')) ?? TypeFilterMode::Both;
+
         $indexQueueLimit = (int) ($raw['indexQueueLimit'] ?? 5);
+        $indexQueueLimit = $indexQueueLimit >= 1 ? $indexQueueLimit : 5;
+
         $deltaMax = (int) ($raw['deltaMax'] ?? 10);
+        $deltaMax = $deltaMax >= 1 ? $deltaMax : 10;
 
         return new self(
             typeFilter: $mode,
-            indexQueueLimit: $indexQueueLimit >= 1 ? $indexQueueLimit : 5,
-            deltaMax: $deltaMax >= 1 ? $deltaMax : 10,
+            indexQueueLimit: $indexQueueLimit,
+            deltaMax: max($deltaMax, $indexQueueLimit),
         );
     }
 }

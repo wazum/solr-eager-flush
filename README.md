@@ -46,8 +46,8 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 | `indexQueueLimit` | `5` | Skip the eager flush when more than this many pending index-queue items already exist. |
 | `deltaMax` | `10` | Maximum index-queue items to index per invocation, per affected site root. |
 
-> [!TIP]
-> Keep `deltaMax` greater than or equal to `indexQueueLimit`. The pressure gate counts pending items before indexing, while `deltaMax` caps how many are indexed per site — setting the cap lower than the limit can leave allowed items behind for the next scheduler run.
+> [!NOTE]
+> `deltaMax` is automatically raised to at least `indexQueueLimit`. Otherwise the `deltaMax`-sized indexing window could be filled by items the `typeFilter` then discards, leaving allowed items unflushed until the next scheduler run.
 
 ### Per-site control
 
