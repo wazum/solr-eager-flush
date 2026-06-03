@@ -13,6 +13,8 @@ services:
 
     Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy: '@Wazum\SolrEagerFlush\Site\SiteConfigEagerFlushPolicy'
 
+    Wazum\SolrEagerFlush\Reachability\SolrReachability: '@Wazum\SolrEagerFlush\Reachability\ConnectionManagerSolrReachability'
+
     Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
         factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']
         arguments:

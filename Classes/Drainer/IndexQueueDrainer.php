@@ -8,6 +8,7 @@ use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
 use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
+use Wazum\SolrEagerFlush\Reachability\SolrReachability;
 use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
 
@@ -19,6 +20,7 @@ class IndexQueueDrainer
         private readonly EagerFlushRunContext $runContext,
         private readonly SiteIndexer $siteIndexer,
         private readonly SiteEagerFlushPolicy $siteEagerFlushPolicy,
+        private readonly SolrReachability $solrReachability,
     ) {}
 
     public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
@@ -38,6 +40,9 @@ class IndexQueueDrainer
         try {
             foreach ($rootPids as $rootPid) {
                 if (!$this->siteEagerFlushPolicy->isEnabledForRoot($rootPid)) {
+                    continue;
+                }
+                if (!$this->solrReachability->isReachable($rootPid)) {
                     continue;
                 }
                 try {

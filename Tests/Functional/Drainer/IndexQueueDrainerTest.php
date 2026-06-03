@@ -10,6 +10,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
 use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
+use Wazum\SolrEagerFlush\Reachability\SolrReachability;
 use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
@@ -143,10 +144,30 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([], $result->failedRoots, 'A disabled site is skipped, not counted as a failure');
     }
 
+    public function testSkipsRootsWhereSolrIsUnreachable(): void
+    {
+        $this->insertPendingItem(root: 1);
+        $this->insertPendingItem(root: 2);
+        $indexer = $this->recordingIndexer();
+        $reachability = new class implements SolrReachability {
+            public function isReachable(int $rootPageId): bool
+            {
+                return 2 !== $rootPageId;
+            }
+        };
+
+        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer, reachability: $reachability)->drain(10);
+
+        self::assertSame([1], $indexer->attempted, 'Root 2 (Solr unreachable) is not indexed');
+        self::assertSame([1], $result->succeededRoots);
+        self::assertSame([], $result->failedRoots, 'An unreachable Solr is skipped, not counted as a failure');
+    }
+
     private function buildDrainer(
         EagerFlushRunContext $runContext,
         SiteIndexer $indexer,
         ?SiteEagerFlushPolicy $policy = null,
+        ?SolrReachability $reachability = null,
     ): IndexQueueDrainer {
         return new IndexQueueDrainer(
             GeneralUtility::makeInstance(ConnectionPool::class),
@@ -154,7 +175,18 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             $runContext,
             $indexer,
             $policy ?? $this->allEnabledPolicy(),
+            $reachability ?? $this->alwaysReachable(),
         );
+    }
+
+    private function alwaysReachable(): SolrReachability
+    {
+        return new class implements SolrReachability {
+            public function isReachable(int $rootPageId): bool
+            {
+                return true;
+            }
+        };
     }
 
     private function allEnabledPolicy(): SiteEagerFlushPolicy
