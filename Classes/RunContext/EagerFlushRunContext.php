@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\RunContext;
 
-use TYPO3\CMS\Core\SingletonInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
-final class EagerFlushRunContext implements SingletonInterface
+#[Autoconfigure(shared: true)]
+final class EagerFlushRunContext
 {
     private int $depth = 0;
 
