@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace Wazum\SolrEagerFlush\Tests\Functional\Site;
 
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\RecordUpdatedEvent;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
+use RuntimeException;
+use Stringable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\Entity\Site;
@@ -17,9 +23,8 @@ final class SiteRootResolverTest extends AbstractFunctionalTestCase
 {
     public function testResolvesSiteRootForPageUpdate(): void
     {
-        $resolver = new CoreSiteRootResolver($this->siteFinderReturningRoot(7), $this->connectionPool());
-
-        $root = $resolver->resolveRootPageId(new RecordUpdatedEvent(uid: 10, table: 'pages'));
+        $root = $this->resolver($this->siteFinderReturningRoot(7))
+            ->resolveRootPageId(new RecordUpdatedEvent(uid: 10, table: 'pages'));
 
         self::assertSame(7, $root);
     }
@@ -29,31 +34,64 @@ final class SiteRootResolverTest extends AbstractFunctionalTestCase
         $this->connectionPool()
             ->getConnectionForTable('tt_content')
             ->insert('tt_content', ['uid' => 500, 'pid' => 10]);
-        $resolver = new CoreSiteRootResolver($this->siteFinderReturningRoot(7), $this->connectionPool());
 
-        $root = $resolver->resolveRootPageId(new RecordUpdatedEvent(uid: 500, table: 'tt_content'));
+        $root = $this->resolver($this->siteFinderReturningRoot(7))
+            ->resolveRootPageId(new RecordUpdatedEvent(uid: 500, table: 'tt_content'));
 
         self::assertSame(7, $root);
     }
 
-    public function testReturnsNullWhenSiteCannotBeResolved(): void
+    public function testReturnsNullSilentlyWhenPageHasNoSite(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByPageId')->willThrowException(new SiteNotFoundException('no site', 1));
-        $resolver = new CoreSiteRootResolver($siteFinder, $this->connectionPool());
+        $logger = new class extends AbstractLogger {
+            /** @var list<string> */
+            public array $levels = [];
 
-        $root = $resolver->resolveRootPageId(new RecordUpdatedEvent(uid: 9999, table: 'pages'));
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->levels[] = (string) $level;
+            }
+        };
+
+        $root = $this->resolver($siteFinder, $logger)->resolveRootPageId(new RecordUpdatedEvent(uid: 9999, table: 'pages'));
 
         self::assertNull($root);
+        self::assertSame([], $logger->levels, 'A page without a site is expected and must not be logged');
     }
 
     public function testReturnsNullWhenRecordHasNoRow(): void
     {
-        $resolver = new CoreSiteRootResolver($this->siteFinderReturningRoot(7), $this->connectionPool());
-
-        $root = $resolver->resolveRootPageId(new RecordUpdatedEvent(uid: 12345, table: 'tt_content'));
+        $root = $this->resolver($this->siteFinderReturningRoot(7))
+            ->resolveRootPageId(new RecordUpdatedEvent(uid: 12345, table: 'tt_content'));
 
         self::assertNull($root);
+    }
+
+    public function testLogsAndReturnsNullOnUnexpectedError(): void
+    {
+        $siteFinder = $this->createMock(SiteFinder::class);
+        $siteFinder->method('getSiteByPageId')->willThrowException(new RuntimeException('database is down'));
+        $logger = new class extends AbstractLogger {
+            /** @var list<string> */
+            public array $levels = [];
+
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->levels[] = (string) $level;
+            }
+        };
+
+        $root = $this->resolver($siteFinder, $logger)->resolveRootPageId(new RecordUpdatedEvent(uid: 10, table: 'pages'));
+
+        self::assertNull($root);
+        self::assertContains(LogLevel::WARNING, $logger->levels, 'An unexpected resolution error must be logged');
+    }
+
+    private function resolver(SiteFinder $siteFinder, LoggerInterface $logger = new NullLogger()): CoreSiteRootResolver
+    {
+        return new CoreSiteRootResolver($siteFinder, $this->connectionPool(), $logger);
     }
 
     private function siteFinderReturningRoot(int $rootPageId): SiteFinder

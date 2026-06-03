@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Wazum\SolrEagerFlush\Site;
 
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\DataUpdateEventInterface;
+use Psr\Log\LoggerInterface;
 use Throwable;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 final readonly class CoreSiteRootResolver implements SiteRootResolver
@@ -15,6 +17,7 @@ final readonly class CoreSiteRootResolver implements SiteRootResolver
     public function __construct(
         private SiteFinder $siteFinder,
         private ConnectionPool $connectionPool,
+        private LoggerInterface $logger,
     ) {}
 
     public function resolveRootPageId(DataUpdateEventInterface $event): ?int
@@ -28,7 +31,11 @@ final readonly class CoreSiteRootResolver implements SiteRootResolver
             }
 
             return $this->siteFinder->getSiteByPageId($pageId)->getRootPageId();
-        } catch (Throwable) {
+        } catch (SiteNotFoundException) {
+            return null;
+        } catch (Throwable $e) {
+            $this->logger->warning('eager-flush: failed to resolve the affected site root', ['exception' => $e]);
+
             return null;
         }
     }
