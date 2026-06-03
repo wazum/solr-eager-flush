@@ -2,7 +2,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Solr Eager Flush',
-    'description' => 'Eager Solr index flush on save with pressure gating (ext:solr monitoringType=0)',
+    'description' => 'Eager Solr indexing on save for TYPO3 (ext:solr)',
     'category' => 'plugin',
     'author' => 'Wolfgang Klinger',
     'author_email' => 'wolfgang@wazum.com',

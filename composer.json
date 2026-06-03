@@ -1,7 +1,7 @@
 {
     "name": "wazum/solr-eager-flush",
     "type": "typo3-cms-extension",
-    "description": "Eager Solr index flush on save with pressure gating for TYPO3 v13 (ext:solr monitoringType=0)",
+    "description": "Eager Solr indexing on save for TYPO3 (ext:solr)",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
