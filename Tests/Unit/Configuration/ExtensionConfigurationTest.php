@@ -40,30 +40,43 @@ final class ExtensionConfigurationTest extends TestCase
         self::assertSame(10, $config->deltaMax);
     }
 
-    public function testThrowsOnUnknownTypeFilter(): void
+    public function testFallsBackToDefaultTypeFilterOnUnknownValue(): void
     {
         $core = $this->createMock(Core::class);
         $core->method('get')->willReturn(['typeFilter' => 'banana']);
 
-        $this->expectException(InvalidArgumentException::class);
-        ExtensionConfiguration::fromCore($core);
+        $config = ExtensionConfiguration::fromCore($core);
+
+        self::assertSame(TypeFilterMode::Both, $config->typeFilter);
     }
 
-    public function testThrowsOnZeroIndexQueueLimit(): void
+    public function testFallsBackToDefaultIndexQueueLimitWhenBelowOne(): void
     {
         $core = $this->createMock(Core::class);
         $core->method('get')->willReturn(['indexQueueLimit' => '0']);
 
-        $this->expectException(InvalidArgumentException::class);
-        ExtensionConfiguration::fromCore($core);
+        $config = ExtensionConfiguration::fromCore($core);
+
+        self::assertSame(5, $config->indexQueueLimit);
     }
 
-    public function testThrowsOnNegativeDeltaMax(): void
+    public function testFallsBackToDefaultDeltaMaxWhenBelowOne(): void
     {
         $core = $this->createMock(Core::class);
         $core->method('get')->willReturn(['deltaMax' => '-1']);
 
+        $config = ExtensionConfiguration::fromCore($core);
+
+        self::assertSame(10, $config->deltaMax);
+    }
+
+    public function testConstructorEnforcesPositiveBounds(): void
+    {
         $this->expectException(InvalidArgumentException::class);
-        ExtensionConfiguration::fromCore($core);
+        new ExtensionConfiguration(
+            typeFilter: TypeFilterMode::Both,
+            indexQueueLimit: 0,
+            deltaMax: 10,
+        );
     }
 }

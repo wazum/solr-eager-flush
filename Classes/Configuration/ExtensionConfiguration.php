@@ -30,16 +30,14 @@ final readonly class ExtensionConfiguration
         }
         $raw = \is_array($raw) ? $raw : [];
 
-        $typeFilterValue = (string) ($raw['typeFilter'] ?? 'both');
-        $mode = TypeFilterMode::tryFrom($typeFilterValue);
-        if (null === $mode) {
-            throw new InvalidArgumentException("Invalid typeFilter value: {$typeFilterValue}");
-        }
+        $mode = TypeFilterMode::tryFrom((string) ($raw['typeFilter'] ?? 'both')) ?? TypeFilterMode::Both;
+        $indexQueueLimit = (int) ($raw['indexQueueLimit'] ?? 5);
+        $deltaMax = (int) ($raw['deltaMax'] ?? 10);
 
         return new self(
             typeFilter: $mode,
-            indexQueueLimit: (int) ($raw['indexQueueLimit'] ?? 5),
-            deltaMax: (int) ($raw['deltaMax'] ?? 10),
+            indexQueueLimit: $indexQueueLimit >= 1 ? $indexQueueLimit : 5,
+            deltaMax: $deltaMax >= 1 ? $deltaMax : 10,
         );
     }
 }
