@@ -30,7 +30,7 @@ final readonly class ExtensionConfiguration
         }
         $raw = \is_array($raw) ? $raw : [];
 
-        $mode = TypeFilterMode::tryFrom((string) ($raw['typeFilter'] ?? 'both')) ?? TypeFilterMode::Both;
+        $mode = TypeFilterMode::tryFrom((string) ($raw['typeFilter'] ?? 'records')) ?? TypeFilterMode::Records;
 
         $indexQueueLimit = (int) ($raw['indexQueueLimit'] ?? 5);
         $indexQueueLimit = $indexQueueLimit >= 1 ? $indexQueueLimit : 5;

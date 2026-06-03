@@ -1,5 +1,5 @@
-# cat=basic/enable; type=options[both=both,pages=pages,records=records]; label=Type filter: which Item types to eager-flush
-typeFilter = both
+# cat=basic/enable; type=options[both=both,pages=pages,records=records]; label=Type filter: which item types to eager-flush. Default "records" keeps saves fast; "pages"/"both" also flush pages, which ext:solr indexes by rendering the page.
+typeFilter = records
 
 # cat=basic; type=int+; label=Index queue limit: skip eager-flush if pending tx_solr_indexqueue_item count exceeds this number.
 indexQueueLimit = 5

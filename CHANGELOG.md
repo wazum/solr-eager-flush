@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Default `typeFilter` is now `records` instead of `both`; pages are opt-in via `pages`/`both`. ext:solr indexes a page by rendering it, which might be too heavy to run synchronously on every save.
+
 ## [1.0.0] - 2026-06-03
 
 ### Added

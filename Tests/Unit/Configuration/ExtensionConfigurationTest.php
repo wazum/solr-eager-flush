@@ -35,7 +35,7 @@ final class ExtensionConfigurationTest extends TestCase
 
         $config = ExtensionConfiguration::fromCore($core);
 
-        self::assertSame(TypeFilterMode::Both, $config->typeFilter);
+        self::assertSame(TypeFilterMode::Records, $config->typeFilter);
         self::assertSame(5, $config->indexQueueLimit);
         self::assertSame(10, $config->deltaMax);
     }
@@ -47,7 +47,7 @@ final class ExtensionConfigurationTest extends TestCase
 
         $config = ExtensionConfiguration::fromCore($core);
 
-        self::assertSame(TypeFilterMode::Both, $config->typeFilter);
+        self::assertSame(TypeFilterMode::Records, $config->typeFilter);
     }
 
     public function testFallsBackToDefaultIndexQueueLimitWhenBelowOne(): void

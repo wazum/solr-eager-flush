@@ -46,7 +46,7 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 
 | Setting | Default | Description |
 |---|---|---|
-| `typeFilter` | `both` | Which item types to eager-flush: `records`, `pages`, or `both`. |
+| `typeFilter` | `records` | Which item types to eager-flush: `records`, `pages`, or `both`. Defaults to `records` because ext:solr indexes a page by rendering it, which might be too heavy to run synchronously on every save — set `pages` or `both` to opt in (accepting the added save latency). |
 | `indexQueueLimit` | `5` | Skip the eager flush when more than this many pending index-queue items already exist. |
 | `deltaMax` | `10` | Maximum index-queue items to index per invocation, per affected site root. |
 
