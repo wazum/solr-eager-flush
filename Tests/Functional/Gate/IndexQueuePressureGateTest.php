@@ -7,8 +7,8 @@ namespace Wazum\SolrEagerFlush\Tests\Functional\Gate;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
+use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
 use Wazum\SolrEagerFlush\Gate\IndexQueuePressureGate;
-use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 

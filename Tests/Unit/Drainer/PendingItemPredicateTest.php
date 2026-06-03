@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\Tests\Unit\PendingPredicate;
+namespace Wazum\SolrEagerFlush\Tests\Unit\Drainer;
 
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
+use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
 
 final class PendingItemPredicateTest extends TestCase
 {

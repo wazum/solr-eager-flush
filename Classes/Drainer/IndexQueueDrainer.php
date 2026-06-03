@@ -6,11 +6,8 @@ namespace Wazum\SolrEagerFlush\Drainer;
 
 use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
-use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
-use Wazum\SolrEagerFlush\Reachability\SolrReachability;
-use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
+use Wazum\SolrEagerFlush\Site\SolrReachability;
 
 class IndexQueueDrainer
 {

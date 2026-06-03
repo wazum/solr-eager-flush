@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\Tests\Unit\RunContext;
+namespace Wazum\SolrEagerFlush\Tests\Unit\Drainer;
 
 use PHPUnit\Framework\TestCase;
-use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
+use Wazum\SolrEagerFlush\Drainer\EagerFlushRunContext;
 
 final class EagerFlushRunContextTest extends TestCase
 {

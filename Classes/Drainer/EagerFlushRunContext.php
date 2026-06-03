@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\RunContext;
+namespace Wazum\SolrEagerFlush\Drainer;
 
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 

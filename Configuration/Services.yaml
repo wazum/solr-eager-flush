@@ -7,13 +7,13 @@ services:
     Wazum\SolrEagerFlush\:
         resource: '../Classes/*'
 
-    Wazum\SolrEagerFlush\Indexing\SiteIndexer: '@Wazum\SolrEagerFlush\Indexing\IndexServiceSiteIndexer'
+    Wazum\SolrEagerFlush\Drainer\SiteIndexer: '@Wazum\SolrEagerFlush\Drainer\IndexServiceSiteIndexer'
 
     Wazum\SolrEagerFlush\Site\SiteRootResolver: '@Wazum\SolrEagerFlush\Site\CoreSiteRootResolver'
 
     Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy: '@Wazum\SolrEagerFlush\Site\SiteConfigEagerFlushPolicy'
 
-    Wazum\SolrEagerFlush\Reachability\SolrReachability: '@Wazum\SolrEagerFlush\Reachability\ConnectionManagerSolrReachability'
+    Wazum\SolrEagerFlush\Site\SolrReachability: '@Wazum\SolrEagerFlush\Site\ConnectionManagerSolrReachability'
 
     Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
         factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']

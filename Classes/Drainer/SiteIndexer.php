@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\Indexing;
+namespace Wazum\SolrEagerFlush\Drainer;
 
 interface SiteIndexer
 {

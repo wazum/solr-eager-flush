@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\Indexing;
+namespace Wazum\SolrEagerFlush\Drainer;
 
 use ApacheSolrForTypo3\Solr\Domain\Index\IndexService;
 use ApacheSolrForTypo3\Solr\Domain\Site\SiteRepository;

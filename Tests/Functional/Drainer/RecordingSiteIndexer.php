@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Tests\Functional\Drainer;
 
-use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
+use Wazum\SolrEagerFlush\Drainer\SiteIndexer;
 
 final class RecordingSiteIndexer implements SiteIndexer
 {

@@ -6,7 +6,7 @@ namespace Wazum\SolrEagerFlush\EventListener;
 
 use ApacheSolrForTypo3\Solr\Event\Indexing\BeforeItemsAreIndexedEvent;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
-use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
+use Wazum\SolrEagerFlush\Drainer\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\TypeFilter\ItemTypeMatcher;
 
 final readonly class ScopedItemFilterListener

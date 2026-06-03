@@ -6,7 +6,7 @@ namespace Wazum\SolrEagerFlush\Gate;
 
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
-use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
+use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
 
 final readonly class IndexQueuePressureGate implements EagerFlushGate
 {

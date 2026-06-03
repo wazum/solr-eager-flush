@@ -7,12 +7,12 @@ namespace Wazum\SolrEagerFlush\Tests\Functional\Drainer;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Wazum\SolrEagerFlush\Drainer\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
-use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
-use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
-use Wazum\SolrEagerFlush\Reachability\SolrReachability;
-use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
+use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
+use Wazum\SolrEagerFlush\Drainer\SiteIndexer;
 use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
+use Wazum\SolrEagerFlush\Site\SolrReachability;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 
 final class IndexQueueDrainerTest extends AbstractFunctionalTestCase

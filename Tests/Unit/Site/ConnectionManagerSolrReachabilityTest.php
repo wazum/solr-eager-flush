@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\Tests\Unit\Reachability;
+namespace Wazum\SolrEagerFlush\Tests\Unit\Site;
 
 use ApacheSolrForTypo3\Solr\ConnectionManager;
 use ApacheSolrForTypo3\Solr\System\Solr\Service\SolrWriteService;
 use ApacheSolrForTypo3\Solr\System\Solr\SolrConnection;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use Wazum\SolrEagerFlush\Reachability\ConnectionManagerSolrReachability;
+use Wazum\SolrEagerFlush\Site\ConnectionManagerSolrReachability;
 
 final class ConnectionManagerSolrReachabilityTest extends TestCase
 {

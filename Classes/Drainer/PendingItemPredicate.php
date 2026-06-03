@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\PendingPredicate;
+namespace Wazum\SolrEagerFlush\Drainer;
 
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;

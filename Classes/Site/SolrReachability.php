@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wazum\SolrEagerFlush\Reachability;
+namespace Wazum\SolrEagerFlush\Site;
 
 interface SolrReachability
 {
