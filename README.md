@@ -49,6 +49,16 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 > [!TIP]
 > Keep `deltaMax` greater than or equal to `indexQueueLimit`. The pressure gate counts pending items before indexing, while `deltaMax` caps how many are indexed per site — setting the cap lower than the limit can leave allowed items behind for the next scheduler run.
 
+### Per-site control
+
+Eager flush is enabled for every site by default. To run it only on some sites — for example, immediate indexing on a public website but queue-based indexing on an intranet — opt a site out in its site configuration (`config/sites/<identifier>/config.yaml`):
+
+```yaml
+solr_eager_flush_enabled: false
+```
+
+Sites without the key keep eager flush enabled. This also serves as a per-site kill switch in production without uninstalling the extension.
+
 ## License
 
 GPL-2.0-or-later

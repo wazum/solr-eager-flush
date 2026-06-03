@@ -9,6 +9,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
 use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
 use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
+use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
 
 class IndexQueueDrainer
 {
@@ -17,6 +18,7 @@ class IndexQueueDrainer
         private readonly PendingItemPredicate $predicate,
         private readonly EagerFlushRunContext $runContext,
         private readonly SiteIndexer $siteIndexer,
+        private readonly SiteEagerFlushPolicy $siteEagerFlushPolicy,
     ) {}
 
     public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
@@ -35,6 +37,9 @@ class IndexQueueDrainer
         $this->runContext->enter();
         try {
             foreach ($rootPids as $rootPid) {
+                if (!$this->siteEagerFlushPolicy->isEnabledForRoot($rootPid)) {
+                    continue;
+                }
                 try {
                     $this->siteIndexer->index($rootPid, $deltaMax)
                         ? $succeeded[] = $rootPid

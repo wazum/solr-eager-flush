@@ -11,6 +11,8 @@ services:
 
     Wazum\SolrEagerFlush\Site\SiteRootResolver: '@Wazum\SolrEagerFlush\Site\CoreSiteRootResolver'
 
+    Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy: '@Wazum\SolrEagerFlush\Site\SiteConfigEagerFlushPolicy'
+
     Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
         factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']
         arguments:

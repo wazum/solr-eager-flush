@@ -11,6 +11,7 @@ use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\Indexing\SiteIndexer;
 use Wazum\SolrEagerFlush\PendingPredicate\PendingItemPredicate;
 use Wazum\SolrEagerFlush\RunContext\EagerFlushRunContext;
+use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 
 final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
@@ -123,14 +124,47 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([], $indexer->attempted, 'A resolved-but-not-pending root does not fall back to all roots');
     }
 
-    private function buildDrainer(EagerFlushRunContext $runContext, SiteIndexer $indexer): IndexQueueDrainer
+    public function testSkipsRootsWhereSiteDisablesEagerFlush(): void
     {
+        $this->insertPendingItem(root: 1);
+        $this->insertPendingItem(root: 2);
+        $indexer = $this->recordingIndexer();
+        $policy = new class implements SiteEagerFlushPolicy {
+            public function isEnabledForRoot(int $rootPageId): bool
+            {
+                return 2 !== $rootPageId;
+            }
+        };
+
+        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer, $policy)->drain(10);
+
+        self::assertSame([1], $indexer->attempted, 'Root 2 (eager flush disabled for its site) is not indexed');
+        self::assertSame([1], $result->succeededRoots);
+        self::assertSame([], $result->failedRoots, 'A disabled site is skipped, not counted as a failure');
+    }
+
+    private function buildDrainer(
+        EagerFlushRunContext $runContext,
+        SiteIndexer $indexer,
+        ?SiteEagerFlushPolicy $policy = null,
+    ): IndexQueueDrainer {
         return new IndexQueueDrainer(
             GeneralUtility::makeInstance(ConnectionPool::class),
             new PendingItemPredicate(),
             $runContext,
             $indexer,
+            $policy ?? $this->allEnabledPolicy(),
         );
+    }
+
+    private function allEnabledPolicy(): SiteEagerFlushPolicy
+    {
+        return new class implements SiteEagerFlushPolicy {
+            public function isEnabledForRoot(int $rootPageId): bool
+            {
+                return true;
+            }
+        };
     }
 
     private function recordingIndexer(): RecordingSiteIndexer
