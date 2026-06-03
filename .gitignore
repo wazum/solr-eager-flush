@@ -1,5 +1,6 @@
 /vendor/
 /public/
+/var/
 /.Build/
 .phpunit.cache/
 /.phpstan-cache/
