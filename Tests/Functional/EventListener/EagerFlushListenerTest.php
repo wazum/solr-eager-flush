@@ -8,6 +8,7 @@ use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\EventListener\Event
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\DataUpdateEventInterface;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\RecordUpdatedEvent;
 use Closure;
+use PHPUnit\Framework\Attributes\Test;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -26,7 +27,8 @@ use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final class EagerFlushListenerTest extends AbstractFunctionalTestCase
 {
-    public function testSkipsWhenFirstGateReturnsFalse(): void
+    #[Test]
+    public function skipsWhenFirstGateReturnsFalse(): void
     {
         $drainerCalled = false;
         $listener = $this->buildListener(
@@ -41,7 +43,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertFalse($drainerCalled, 'Drainer must not run when a gate skips');
     }
 
-    public function testDrainsWhenAllGatesPass(): void
+    #[Test]
+    public function drainsWhenAllGatesPass(): void
     {
         $drainerCalled = false;
         $listener = $this->buildListener(
@@ -56,7 +59,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertTrue($drainerCalled, 'Drainer must run when all gates pass');
     }
 
-    public function testSwallowsExceptionsFromGate(): void
+    #[Test]
+    public function swallowsExceptionsFromGate(): void
     {
         $throwingGate = new class implements EagerFlushGate {
             public function shouldProceed(): bool
@@ -77,7 +81,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertFalse($drainerCalled, 'Drainer untouched after gate exception');
     }
 
-    public function testSwallowsExceptionsFromDrainer(): void
+    #[Test]
+    public function swallowsExceptionsFromDrainer(): void
     {
         $drainerCalled = false;
         $listener = $this->buildListener(
@@ -93,7 +98,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertTrue($drainerCalled, 'Drainer was called (and threw, but exception was swallowed)');
     }
 
-    public function testPassesResolvedSiteRootToDrainer(): void
+    #[Test]
+    public function passesResolvedSiteRootToDrainer(): void
     {
         $capturedRoot = -1;
         $listener = $this->buildListener(
@@ -109,7 +115,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertSame(42, $capturedRoot, 'Listener must scope the drain to the resolved site root');
     }
 
-    public function testDefersToSchedulerWhenSiteCannotBeResolved(): void
+    #[Test]
+    public function defersToSchedulerWhenSiteCannotBeResolved(): void
     {
         $drainerCalled = false;
         $listener = $this->buildListener(
@@ -125,7 +132,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertFalse($drainerCalled, 'An unresolved site must defer to the scheduler, never fan out to all roots');
     }
 
-    public function testSkipsWhenQueuePressureIsTooHigh(): void
+    #[Test]
+    public function skipsWhenQueuePressureIsTooHigh(): void
     {
         $drainerCalled = false;
         $listener = $this->buildListener(
@@ -142,7 +150,8 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertFalse($drainerCalled, 'Drainer must not run when the resolved site is over the pressure limit');
     }
 
-    public function testLogsWarningWhenDrainReportsFailures(): void
+    #[Test]
+    public function logsWarningWhenDrainReportsFailures(): void
     {
         $logger = new class extends AbstractLogger {
             /** @var list<string> */

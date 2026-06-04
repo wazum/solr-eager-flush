@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wazum\SolrEagerFlush\Tests\Functional\Site;
 
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\RecordUpdatedEvent;
+use PHPUnit\Framework\Attributes\Test;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -21,7 +22,8 @@ use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 
 final class SiteRootResolverTest extends AbstractFunctionalTestCase
 {
-    public function testResolvesSiteRootForPageUpdate(): void
+    #[Test]
+    public function resolvesSiteRootForPageUpdate(): void
     {
         $root = $this->resolver($this->siteFinderReturningRoot(7))
             ->resolveRootPageId(new RecordUpdatedEvent(uid: 10, table: 'pages'));
@@ -29,7 +31,8 @@ final class SiteRootResolverTest extends AbstractFunctionalTestCase
         self::assertSame(7, $root);
     }
 
-    public function testResolvesSiteRootForRecordViaItsPid(): void
+    #[Test]
+    public function resolvesSiteRootForRecordViaItsPid(): void
     {
         $this->connectionPool()
             ->getConnectionForTable('tt_content')
@@ -41,7 +44,8 @@ final class SiteRootResolverTest extends AbstractFunctionalTestCase
         self::assertSame(7, $root);
     }
 
-    public function testReturnsNullSilentlyWhenPageHasNoSite(): void
+    #[Test]
+    public function returnsNullSilentlyWhenPageHasNoSite(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByPageId')->willThrowException(new SiteNotFoundException('no site', 1));
@@ -61,7 +65,8 @@ final class SiteRootResolverTest extends AbstractFunctionalTestCase
         self::assertSame([], $logger->levels, 'A page without a site is expected and must not be logged');
     }
 
-    public function testReturnsNullWhenRecordHasNoRow(): void
+    #[Test]
+    public function returnsNullWhenRecordHasNoRow(): void
     {
         $root = $this->resolver($this->siteFinderReturningRoot(7))
             ->resolveRootPageId(new RecordUpdatedEvent(uid: 12345, table: 'tt_content'));
@@ -69,7 +74,8 @@ final class SiteRootResolverTest extends AbstractFunctionalTestCase
         self::assertNull($root);
     }
 
-    public function testLogsAndReturnsNullOnUnexpectedError(): void
+    #[Test]
+    public function logsAndReturnsNullOnUnexpectedError(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByPageId')->willThrowException(new RuntimeException('database is down'));

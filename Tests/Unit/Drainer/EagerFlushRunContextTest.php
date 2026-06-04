@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Tests\Unit\Drainer;
 
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\SolrEagerFlush\Drainer\EagerFlushRunContext;
 
 final class EagerFlushRunContextTest extends TestCase
 {
-    public function testStartsInactive(): void
+    #[Test]
+    public function startsInactive(): void
     {
         self::assertFalse((new EagerFlushRunContext())->isActive());
     }
 
-    public function testEnterSetsActiveTrue(): void
+    #[Test]
+    public function enterSetsActiveTrue(): void
     {
         $ctx = new EagerFlushRunContext();
         $ctx->enter();
         self::assertTrue($ctx->isActive());
     }
 
-    public function testLeaveSetsActiveFalse(): void
+    #[Test]
+    public function leaveSetsActiveFalse(): void
     {
         $ctx = new EagerFlushRunContext();
         $ctx->enter();
@@ -29,7 +33,8 @@ final class EagerFlushRunContextTest extends TestCase
         self::assertFalse($ctx->isActive());
     }
 
-    public function testNestedEnterLeavePairsRequireMatchedLeaves(): void
+    #[Test]
+    public function nestedEnterLeavePairsRequireMatchedLeaves(): void
     {
         $ctx = new EagerFlushRunContext();
         $ctx->enter();
@@ -40,7 +45,8 @@ final class EagerFlushRunContextTest extends TestCase
         self::assertFalse($ctx->isActive());
     }
 
-    public function testLeaveOnInactiveContextIsNoop(): void
+    #[Test]
+    public function leaveOnInactiveContextIsNoop(): void
     {
         $ctx = new EagerFlushRunContext();
         $ctx->leave();

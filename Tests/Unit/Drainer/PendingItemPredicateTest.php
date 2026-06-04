@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Tests\Unit\Drainer;
 
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -11,7 +12,8 @@ use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
 
 final class PendingItemPredicateTest extends TestCase
 {
-    public function testReturnsThreeWhereClauseFragments(): void
+    #[Test]
+    public function returnsThreeWhereClauseFragments(): void
     {
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $expr = $this->createMock(ExpressionBuilder::class);

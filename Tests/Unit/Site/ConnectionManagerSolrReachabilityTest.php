@@ -7,27 +7,31 @@ namespace Wazum\SolrEagerFlush\Tests\Unit\Site;
 use ApacheSolrForTypo3\Solr\ConnectionManager;
 use ApacheSolrForTypo3\Solr\System\Solr\Service\SolrWriteService;
 use ApacheSolrForTypo3\Solr\System\Solr\SolrConnection;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Wazum\SolrEagerFlush\Site\ConnectionManagerSolrReachability;
 
 final class ConnectionManagerSolrReachabilityTest extends TestCase
 {
-    public function testReachableWhenWriteServiceAnswersPing(): void
+    #[Test]
+    public function reachableWhenWriteServiceAnswersPing(): void
     {
         $reachability = new ConnectionManagerSolrReachability($this->connectionManagerPinging(true));
 
         self::assertTrue($reachability->isReachable(1));
     }
 
-    public function testNotReachableWhenPingFails(): void
+    #[Test]
+    public function notReachableWhenPingFails(): void
     {
         $reachability = new ConnectionManagerSolrReachability($this->connectionManagerPinging(false));
 
         self::assertFalse($reachability->isReachable(1));
     }
 
-    public function testNotReachableWhenConnectionCannotBeResolved(): void
+    #[Test]
+    public function notReachableWhenConnectionCannotBeResolved(): void
     {
         $connectionManager = $this->createMock(ConnectionManager::class);
         $connectionManager->method('getConnectionByRootPageId')

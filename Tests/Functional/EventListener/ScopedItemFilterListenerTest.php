@@ -6,6 +6,7 @@ namespace Wazum\SolrEagerFlush\Tests\Functional\EventListener;
 
 use ApacheSolrForTypo3\Solr\Event\Indexing\BeforeItemsAreIndexedEvent;
 use ApacheSolrForTypo3\Solr\IndexQueue\Item;
+use PHPUnit\Framework\Attributes\Test;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Drainer\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\EventListener\ScopedItemFilterListener;
@@ -15,7 +16,8 @@ use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final class ScopedItemFilterListenerTest extends AbstractFunctionalTestCase
 {
-    public function testPassesThroughWhenRunContextIsInactive(): void
+    #[Test]
+    public function passesThroughWhenRunContextIsInactive(): void
     {
         $pagesItem = $this->fakeItem('pages');
         $newsItem = $this->fakeItem('tx_news_domain_model_news');
@@ -26,7 +28,8 @@ final class ScopedItemFilterListenerTest extends AbstractFunctionalTestCase
         self::assertCount(2, $event->getItems(), 'Inactive RunContext means no filtering');
     }
 
-    public function testFiltersOutPagesWhenRecordsModeActive(): void
+    #[Test]
+    public function filtersOutPagesWhenRecordsModeActive(): void
     {
         $pagesItem = $this->fakeItem('pages');
         $newsItem = $this->fakeItem('tx_news_domain_model_news');
@@ -44,7 +47,8 @@ final class ScopedItemFilterListenerTest extends AbstractFunctionalTestCase
         self::assertSame('tx_news_domain_model_news', $event->getItems()[0]->getType());
     }
 
-    public function testFiltersOutRecordsWhenPagesModeActive(): void
+    #[Test]
+    public function filtersOutRecordsWhenPagesModeActive(): void
     {
         $pagesItem = $this->fakeItem('pages');
         $newsItem = $this->fakeItem('tx_news_domain_model_news');
@@ -62,7 +66,8 @@ final class ScopedItemFilterListenerTest extends AbstractFunctionalTestCase
         self::assertSame('pages', $event->getItems()[0]->getType());
     }
 
-    public function testBothModePassesEverythingThroughEvenWhenActive(): void
+    #[Test]
+    public function bothModePassesEverythingThroughEvenWhenActive(): void
     {
         $pagesItem = $this->fakeItem('pages');
         $newsItem = $this->fakeItem('tx_news_domain_model_news');

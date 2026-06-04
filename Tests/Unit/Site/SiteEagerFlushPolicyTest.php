@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Tests\Unit\Site;
 
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -18,17 +19,20 @@ use Wazum\SolrEagerFlush\Site\SiteConfigEagerFlushPolicy;
 
 final class SiteEagerFlushPolicyTest extends TestCase
 {
-    public function testEnabledByDefaultWhenKeyAbsent(): void
+    #[Test]
+    public function enabledByDefaultWhenKeyAbsent(): void
     {
         self::assertTrue($this->policy([])->isEnabledForRoot(1));
     }
 
-    public function testDisabledWhenSiteConfigOptsOut(): void
+    #[Test]
+    public function disabledWhenSiteConfigOptsOut(): void
     {
         self::assertFalse($this->policy(['solr_eager_flush_enabled' => false])->isEnabledForRoot(1));
     }
 
-    public function testDisabledWhenSiteConfigOptsOutWithStringValue(): void
+    #[Test]
+    public function disabledWhenSiteConfigOptsOutWithStringValue(): void
     {
         self::assertFalse(
             $this->policy(['solr_eager_flush_enabled' => 'false'])->isEnabledForRoot(1),
@@ -36,12 +40,14 @@ final class SiteEagerFlushPolicyTest extends TestCase
         );
     }
 
-    public function testEnabledWhenSiteConfigOptsIn(): void
+    #[Test]
+    public function enabledWhenSiteConfigOptsIn(): void
     {
         self::assertTrue($this->policy(['solr_eager_flush_enabled' => true])->isEnabledForRoot(1));
     }
 
-    public function testEnabledWhenSiteCannotBeResolved(): void
+    #[Test]
+    public function enabledWhenSiteCannotBeResolved(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByRootPageId')->willThrowException(new SiteNotFoundException('no site', 1));
@@ -52,7 +58,8 @@ final class SiteEagerFlushPolicyTest extends TestCase
         );
     }
 
-    public function testLogsUnexpectedErrorAndStaysEnabled(): void
+    #[Test]
+    public function logsUnexpectedErrorAndStaysEnabled(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByRootPageId')->willThrowException(new RuntimeException('database is down'));

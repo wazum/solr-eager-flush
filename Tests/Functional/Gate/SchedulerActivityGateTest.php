@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wazum\SolrEagerFlush\Tests\Functional\Gate;
 
 use ApacheSolrForTypo3\Solr\Task\IndexQueueWorkerTask;
+use PHPUnit\Framework\Attributes\Test;
 use stdClass;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -14,13 +15,15 @@ use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 
 final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
 {
-    public function testProceedsWhenNoSolrTaskIsRunning(): void
+    #[Test]
+    public function proceedsWhenNoSolrTaskIsRunning(): void
     {
         $gate = $this->resolveGate();
         self::assertTrue($gate->shouldProceed());
     }
 
-    public function testSkipsWhenIndexQueueWorkerTaskIsRunning(): void
+    #[Test]
+    public function skipsWhenIndexQueueWorkerTaskIsRunning(): void
     {
         $this->insertSchedulerTask(
             taskObject: GeneralUtility::makeInstance(IndexQueueWorkerTask::class),
@@ -30,7 +33,8 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
         self::assertFalse($this->resolveGate()->shouldProceed());
     }
 
-    public function testIgnoresNonSolrTasksWithRunningExecutions(): void
+    #[Test]
+    public function ignoresNonSolrTasksWithRunningExecutions(): void
     {
         $this->insertSchedulerTask(
             taskObject: new stdClass(),
@@ -40,7 +44,8 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
         self::assertTrue($this->resolveGate()->shouldProceed());
     }
 
-    public function testIgnoresSolrTaskWithEmptyExecutions(): void
+    #[Test]
+    public function ignoresSolrTaskWithEmptyExecutions(): void
     {
         $this->insertSchedulerTask(
             taskObject: GeneralUtility::makeInstance(IndexQueueWorkerTask::class),
@@ -50,7 +55,8 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
         self::assertTrue($this->resolveGate()->shouldProceed());
     }
 
-    public function testIgnoresDisabledSolrTask(): void
+    #[Test]
+    public function ignoresDisabledSolrTask(): void
     {
         $this->insertSchedulerTask(
             taskObject: GeneralUtility::makeInstance(IndexQueueWorkerTask::class),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Tests\Functional\Drainer;
 
+use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -17,7 +18,8 @@ use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 
 final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
 {
-    public function testDrainExitsCleanlyWhenIndexQueueIsEmpty(): void
+    #[Test]
+    public function drainExitsCleanlyWhenIndexQueueIsEmpty(): void
     {
         $indexer = $this->recordingIndexer();
         $runContext = new EagerFlushRunContext();
@@ -30,7 +32,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertFalse($runContext->isActive());
     }
 
-    public function testIndexesEachAffectedRootAndReportsSuccess(): void
+    #[Test]
+    public function indexesEachAffectedRootAndReportsSuccess(): void
     {
         $this->insertPendingItem(root: 1);
         $this->insertPendingItem(root: 2);
@@ -43,7 +46,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([], $result->failedRoots);
     }
 
-    public function testContinuesToRemainingRootsWhenOneFailsAndReportsOutcome(): void
+    #[Test]
+    public function continuesToRemainingRootsWhenOneFailsAndReportsOutcome(): void
     {
         $this->insertPendingItem(root: 1);
         $this->insertPendingItem(root: 2);
@@ -71,7 +75,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertFalse($runContext->isActive(), 'RunContext released despite a failing root');
     }
 
-    public function testTreatsUnsuccessfulIndexingAsFailure(): void
+    #[Test]
+    public function treatsUnsuccessfulIndexingAsFailure(): void
     {
         $this->insertPendingItem(root: 1);
         $indexer = new class implements SiteIndexer {
@@ -92,7 +97,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([1], $result->failedRoots);
     }
 
-    public function testRecordsFailureReasonForThrowingRoot(): void
+    #[Test]
+    public function recordsFailureReasonForThrowingRoot(): void
     {
         $this->insertPendingItem(root: 1);
         $indexer = new class implements SiteIndexer {
@@ -109,7 +115,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertStringContainsString('solr exploded', $result->failureReasons[1]);
     }
 
-    public function testFlushesOnlyTheScopedRootWhenGiven(): void
+    #[Test]
+    public function flushesOnlyTheScopedRootWhenGiven(): void
     {
         $this->insertPendingItem(root: 1);
         $this->insertPendingItem(root: 2);
@@ -121,7 +128,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([1], $result->succeededRoots);
     }
 
-    public function testFallsBackToAllRootsWhenScopeIsNull(): void
+    #[Test]
+    public function fallsBackToAllRootsWhenScopeIsNull(): void
     {
         $this->insertPendingItem(root: 1);
         $this->insertPendingItem(root: 2);
@@ -132,7 +140,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertEqualsCanonicalizing([1, 2], $indexer->attempted, 'Unresolved scope flushes all pending roots');
     }
 
-    public function testScopedRootWithNoPendingItemsIndexesNothing(): void
+    #[Test]
+    public function scopedRootWithNoPendingItemsIndexesNothing(): void
     {
         $this->insertPendingItem(root: 1);
         $indexer = $this->recordingIndexer();
@@ -142,7 +151,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([], $indexer->attempted, 'A resolved-but-not-pending root does not fall back to all roots');
     }
 
-    public function testSkipsRootsWhereSiteDisablesEagerFlush(): void
+    #[Test]
+    public function skipsRootsWhereSiteDisablesEagerFlush(): void
     {
         $this->insertPendingItem(root: 1);
         $this->insertPendingItem(root: 2);
@@ -161,7 +171,8 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([], $result->failedRoots, 'A disabled site is skipped, not counted as a failure');
     }
 
-    public function testSkipsRootsWhereSolrIsUnreachable(): void
+    #[Test]
+    public function skipsRootsWhereSolrIsUnreachable(): void
     {
         $this->insertPendingItem(root: 1);
         $this->insertPendingItem(root: 2);

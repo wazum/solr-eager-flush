@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Tests\Functional\Drainer;
 
+use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
@@ -14,28 +15,32 @@ use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final class IndexQueuePressureTest extends AbstractFunctionalTestCase
 {
-    public function testUnderLimit(): void
+    #[Test]
+    public function underLimit(): void
     {
         $this->seedPending(4);
 
         self::assertTrue($this->pressure(indexQueueLimit: 5)->isUnderLimit(1));
     }
 
-    public function testAtExactlyLimit(): void
+    #[Test]
+    public function atExactlyLimit(): void
     {
         $this->seedPending(5);
 
         self::assertTrue($this->pressure(indexQueueLimit: 5)->isUnderLimit(1));
     }
 
-    public function testOverLimit(): void
+    #[Test]
+    public function overLimit(): void
     {
         $this->seedPending(6);
 
         self::assertFalse($this->pressure(indexQueueLimit: 5)->isUnderLimit(1));
     }
 
-    public function testCountsOnlyTheGivenRoot(): void
+    #[Test]
+    public function countsOnlyTheGivenRoot(): void
     {
         for ($i = 0; $i < 20; ++$i) {
             $this->insertItem(['root' => 2]);
@@ -44,7 +49,8 @@ final class IndexQueuePressureTest extends AbstractFunctionalTestCase
         self::assertTrue($this->pressure(indexQueueLimit: 5)->isUnderLimit(1), 'Another site\'s backlog must not apply');
     }
 
-    public function testIgnoresPagesInRecordsMode(): void
+    #[Test]
+    public function ignoresPagesInRecordsMode(): void
     {
         for ($i = 0; $i < 20; ++$i) {
             $this->insertItem(['item_type' => 'pages']);
@@ -56,7 +62,8 @@ final class IndexQueuePressureTest extends AbstractFunctionalTestCase
         );
     }
 
-    public function testCountsRecordsInRecordsMode(): void
+    #[Test]
+    public function countsRecordsInRecordsMode(): void
     {
         for ($i = 0; $i < 6; ++$i) {
             $this->insertItem(['item_type' => 'tx_news_domain_model_news']);
@@ -65,7 +72,8 @@ final class IndexQueuePressureTest extends AbstractFunctionalTestCase
         self::assertFalse($this->pressure(indexQueueLimit: 5, mode: TypeFilterMode::Records)->isUnderLimit(1));
     }
 
-    public function testIgnoresErroredAndAlreadyIndexedItems(): void
+    #[Test]
+    public function ignoresErroredAndAlreadyIndexedItems(): void
     {
         $now = time();
         for ($i = 0; $i < 10; ++$i) {
