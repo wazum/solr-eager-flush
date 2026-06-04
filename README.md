@@ -38,7 +38,7 @@ After a record is saved, ext:solr updates its index queue and fires a `Processin
 - **Pressure gate** — skips when more than `indexQueueLimit` items are already pending, leaving bulk changes to the scheduler.
 - **Scheduler-activity gate** — skips while an Index Queue Worker task is running, to avoid competing with it.
 
-When both gates pass, the flush is scoped to the saved record's site; if that site can't be resolved, the flush is skipped and the items are left to the scheduler (a single save never fans out to other sites). The site is also skipped when eager flush is disabled for it, or when its Solr doesn't answer a quick ping — so an unreachable Solr never makes the save wait. Otherwise its items are indexed up to `deltaMax`, limited to the configured `typeFilter`. A failure on one site is logged and never blocks the save.
+When both gates pass, the flush is scoped to the saved record's site; if that site can't be resolved, the flush is skipped and the items are left to the scheduler (a single save never fans out to other sites). The site is also skipped when eager flush is disabled for it, or when its Solr doesn't answer a quick ping — a Solr that refuses the connection fails instantly, so it doesn't hold up the save (configure a short Solr connection timeout so an *unreachable* host can't stall the ping either). Otherwise its items are indexed up to `deltaMax`, limited to the configured `typeFilter`. A failure on one site is logged and never blocks the save.
 
 ## Configuration
 
