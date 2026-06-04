@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-04
+
+### Fixed
+- The per-site `solr_eager_flush_enabled` setting now parses string/quoted boolean values correctly; a YAML `'false'` no longer accidentally enables eager flush.
+
+### Changed
+- The index-queue pressure check is now scoped to the saved record's site and to the configured `typeFilter`, using a bounded query instead of a full count. A backlog on another site — or of item types you don't eager-flush — no longer suppresses an eligible save.
+
 ## [1.1.0] - 2026-06-03
 
 ### Changed
@@ -26,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Compatibility
 - TYPO3 13.4 LTS and 14.3+, PHP 8.2–8.4. On TYPO3 14, `apache-solr-for-typo3/solr` is currently a pre-release.
 
-[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.2.0
 [1.1.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.1.0
 [1.0.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.0.0

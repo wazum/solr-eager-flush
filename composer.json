@@ -38,7 +38,7 @@
     "extra": {
         "typo3/cms": {
             "extension-key": "solr_eager_flush",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "Package": {
                 "providesPackages": {}
             }
