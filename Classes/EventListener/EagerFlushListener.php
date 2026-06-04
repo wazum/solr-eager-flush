@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
+use Wazum\SolrEagerFlush\Drainer\IndexQueuePressure;
 use Wazum\SolrEagerFlush\Gate\EagerFlushGate;
 use Wazum\SolrEagerFlush\Site\SiteRootResolver;
 
@@ -21,6 +22,7 @@ final readonly class EagerFlushListener
         private iterable $gates,
         private IndexQueueDrainer $drainer,
         private SiteRootResolver $rootResolver,
+        private IndexQueuePressure $pressure,
         private ExtensionConfiguration $config,
         private LoggerInterface $logger,
     ) {}
@@ -39,6 +41,12 @@ final readonly class EagerFlushListener
             $rootPageId = $this->rootResolver->resolveRootPageId($event->getDataUpdateEvent());
             if (null === $rootPageId) {
                 $this->logger->debug('eager-flush skipped', ['reason' => 'site-unresolved']);
+
+                return;
+            }
+
+            if (!$this->pressure->isUnderLimit($rootPageId)) {
+                $this->logger->debug('eager-flush skipped', ['reason' => 'queue-pressure', 'root' => $rootPageId]);
 
                 return;
             }

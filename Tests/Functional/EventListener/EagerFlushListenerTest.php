@@ -17,6 +17,7 @@ use Stringable;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Drainer\DrainResult;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
+use Wazum\SolrEagerFlush\Drainer\IndexQueuePressure;
 use Wazum\SolrEagerFlush\EventListener\EagerFlushListener;
 use Wazum\SolrEagerFlush\Gate\EagerFlushGate;
 use Wazum\SolrEagerFlush\Site\SiteRootResolver;
@@ -124,6 +125,23 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         self::assertFalse($drainerCalled, 'An unresolved site must defer to the scheduler, never fan out to all roots');
     }
 
+    public function testSkipsWhenQueuePressureIsTooHigh(): void
+    {
+        $drainerCalled = false;
+        $listener = $this->buildListener(
+            gates: [$this->gate(true)],
+            onDrain: static function () use (&$drainerCalled): void {
+                $drainerCalled = true;
+            },
+            rootResolver: $this->resolverReturning(1),
+            underPressureLimit: false,
+        );
+
+        $listener->__invoke($this->makeFinishedEvent());
+
+        self::assertFalse($drainerCalled, 'Drainer must not run when the resolved site is over the pressure limit');
+    }
+
     public function testLogsWarningWhenDrainReportsFailures(): void
     {
         $logger = new class extends AbstractLogger {
@@ -157,6 +175,7 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         DrainResult $result = new DrainResult(),
         LoggerInterface $logger = new NullLogger(),
         ?SiteRootResolver $rootResolver = null,
+        bool $underPressureLimit = true,
     ): EagerFlushListener {
         return new EagerFlushListener(
             gates: $gates,
@@ -174,6 +193,14 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
                 }
             },
             rootResolver: $rootResolver ?? $this->resolverReturning(1),
+            pressure: new class($underPressureLimit) extends IndexQueuePressure {
+                public function __construct(private readonly bool $underLimit) {}
+
+                public function isUnderLimit(int $rootPageId): bool
+                {
+                    return $this->underLimit;
+                }
+            },
             config: new ExtensionConfiguration(
                 typeFilter: TypeFilterMode::Both,
                 indexQueueLimit: 5,
