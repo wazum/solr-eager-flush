@@ -9,7 +9,6 @@ use PHPUnit\Framework\Attributes\Test;
 use stdClass;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Scheduler\Task\TaskSerializer;
 use Wazum\SolrEagerFlush\Gate\SchedulerActivityGate;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
 
@@ -26,7 +25,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     public function skipsWhenIndexQueueWorkerTaskIsRunning(): void
     {
         $this->insertSchedulerTask(
-            taskObject: GeneralUtility::makeInstance(IndexQueueWorkerTask::class),
+            taskClassName: IndexQueueWorkerTask::class,
             serializedExecutions: serialize([99]),
         );
 
@@ -37,7 +36,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     public function ignoresNonSolrTasksWithRunningExecutions(): void
     {
         $this->insertSchedulerTask(
-            taskObject: new stdClass(),
+            taskClassName: stdClass::class,
             serializedExecutions: serialize([99]),
         );
 
@@ -48,7 +47,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     public function ignoresSolrTaskWithEmptyExecutions(): void
     {
         $this->insertSchedulerTask(
-            taskObject: GeneralUtility::makeInstance(IndexQueueWorkerTask::class),
+            taskClassName: IndexQueueWorkerTask::class,
             serializedExecutions: '',
         );
 
@@ -59,7 +58,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     public function ignoresDisabledSolrTask(): void
     {
         $this->insertSchedulerTask(
-            taskObject: GeneralUtility::makeInstance(IndexQueueWorkerTask::class),
+            taskClassName: IndexQueueWorkerTask::class,
             serializedExecutions: serialize([99]),
             disable: 1,
         );
@@ -68,7 +67,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     }
 
     private function insertSchedulerTask(
-        object $taskObject,
+        string $taskClassName,
         string $serializedExecutions,
         int $disable = 0,
         int $deleted = 0,
@@ -78,16 +77,13 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
             ->insert('tx_scheduler_task', [
                 'disable' => $disable,
                 'deleted' => $deleted,
-                'serialized_task_object' => serialize($taskObject),
+                'serialized_task_object' => \sprintf('O:%d:"%s":0:{}', \strlen($taskClassName), $taskClassName),
                 'serialized_executions' => $serializedExecutions,
             ]);
     }
 
     private function resolveGate(): SchedulerActivityGate
     {
-        return new SchedulerActivityGate(
-            GeneralUtility::makeInstance(ConnectionPool::class),
-            GeneralUtility::makeInstance(TaskSerializer::class),
-        );
+        return $this->get(SchedulerActivityGate::class);
     }
 }
