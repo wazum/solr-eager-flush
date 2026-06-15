@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- The flush now runs at the end of the request instead of inside the save. On PHP-FPM and LiteSpeed the response is released to the editor first (`fastcgi_finish_request()` / `litespeed_finish_request()`), so the save returns immediately and indexing happens afterwards in the same process. Under the CLI the flush runs inline as before. Persistent worker runtimes (FrankenPHP worker mode) are not supported; leave such sites on queue-based indexing.
+- Several saves within one request are collapsed into a single flush per affected site; gates, pressure check and Solr ping run once per request instead of once per save event.
+
 ## [1.2.0] - 2026-06-04
 
 ### Fixed

@@ -12,7 +12,7 @@
 
 Push editorial changes into Solr **the moment a record is saved**, instead of waiting for the next index-queue scheduler run.
 
-With `apache-solr-for-typo3/solr` in its default `monitoringType = 0` (Immediate) mode, saving a record only *enqueues* it in `tx_solr_indexqueue_item`; the document reaches Solr later, when the **Index Queue Worker** scheduler task next runs. This extension closes that gap: after a save it indexes the freshly queued items synchronously. Built-in gates back off under queue pressure or while the scheduler is already working, so the eager flush stays out of the way when it would cost too much — how a save actually performs still depends on your content and Solr setup.
+With `apache-solr-for-typo3/solr` in its default `monitoringType = 0` (Immediate) mode, saving a record only *enqueues* it in `tx_solr_indexqueue_item`; the document reaches Solr later, when the **Index Queue Worker** scheduler task next runs. This extension closes that gap: it indexes the freshly queued items at the end of the save request — on PHP-FPM and LiteSpeed *after* the response has been sent to the editor, so the save itself stays fast. Built-in gates back off under queue pressure or while the scheduler is already working, so the eager flush stays out of the way when it would cost too much.
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
@@ -33,12 +33,22 @@ composer require wazum/solr-eager-flush
 
 ## How it works
 
-After a record is saved, ext:solr updates its index queue and fires a `ProcessingFinishedEvent`. The extension listens for that event and indexes the queued items right away — unless a gate tells it to back off:
+After a record is saved, ext:solr updates its index queue and fires a `ProcessingFinishedEvent`. The extension listens for that event, resolves the saved record's site and schedules it for a flush at the end of the request. Several saves in one request are collapsed into a single flush per affected site.
+
+When the request ends, the flush runs in the same already-booted process. On PHP-FPM and LiteSpeed the response is released to the editor first (`fastcgi_finish_request()` / `litespeed_finish_request()`), so the save returns immediately and the indexing happens afterwards without the editor waiting for it — this is the case worth having, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM). On other per-request SAPIs (Apache `mod_php`, CGI) the flush still runs at the end of the request, but the connection cannot be released early, so the editor waits for it much as it would for inline indexing. Under the CLI — the scheduler's own Index Queue Worker, command-line imports — the flush runs inline; there is no client to release.
+
+The flush indexes the queued items right away — unless a gate tells it to back off:
 
 - **Pressure gate** — skips when more than `indexQueueLimit` items are already pending, leaving bulk changes to the scheduler.
 - **Scheduler-activity gate** — skips while an Index Queue Worker task is running, to avoid competing with it.
 
-When both gates pass, the flush is scoped to the saved record's site; if that site can't be resolved, the flush is skipped and the items are left to the scheduler (a single save never fans out to other sites). The site is also skipped when eager flush is disabled for it, or when its Solr doesn't answer a quick ping — a Solr that refuses the connection fails instantly, so it doesn't hold up the save (configure a short Solr connection timeout so an *unreachable* host can't stall the ping either). Otherwise its items are indexed up to `deltaMax`, limited to the configured `typeFilter`. A failure on one site is logged and never blocks the save.
+The flush is scoped to the saved record's site; if that site can't be resolved, the flush is skipped and the items are left to the scheduler (a single save never fans out to other sites). The site is also skipped when eager flush is disabled for it, or when its Solr doesn't answer a quick ping — a Solr that refuses the connection fails instantly (configure a short Solr connection timeout so an *unreachable* host can't stall the ping either). Otherwise its items are indexed up to `deltaMax`, limited to the configured `typeFilter`. A failure is logged and never breaks the save.
+
+> [!NOTE]
+> Even with the response released early, the PHP process stays busy until the flush finishes — it counts against your FPM worker pool (`pm.max_children`). The gates and `deltaMax` keep each flush bounded.
+
+> [!NOTE]
+> Persistent worker runtimes (FrankenPHP worker mode) are not supported for the eager flush: their process is reused across requests, so the end-of-request hook would not fire per save. Leave such a site on queue-based indexing — opt it out with the per-site key below.
 
 ## Configuration
 
@@ -46,7 +56,7 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 
 | Setting | Default | Description |
 |---|---|---|
-| `typeFilter` | `records` | Which item types to eager-flush: `records`, `pages`, or `both`. Defaults to `records` because ext:solr indexes a page by rendering it, which might be too heavy to run synchronously on every save — set `pages` or `both` to opt in (accepting the added save latency). |
+| `typeFilter` | `records` | Which item types to eager-flush: `records`, `pages`, or `both`. Defaults to `records` because ext:solr indexes a page by rendering it, which is comparatively heavy. With the response released early the editor no longer waits for it, but the PHP process does — set `pages` or `both` to opt in. |
 | `indexQueueLimit` | `5` | Skip the eager flush when more than this many pending index-queue items already exist. |
 | `deltaMax` | `10` | Maximum index-queue items to index per invocation, per affected site root. |
 

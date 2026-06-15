@@ -7,228 +7,87 @@ namespace Wazum\SolrEagerFlush\Tests\Functional\EventListener;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\EventListener\Events\ProcessingFinishedEvent;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\DataUpdateEventInterface;
 use ApacheSolrForTypo3\Solr\Domain\Index\Queue\UpdateHandler\Events\RecordUpdatedEvent;
-use Closure;
 use PHPUnit\Framework\Attributes\Test;
-use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use RuntimeException;
-use Stringable;
-use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
-use Wazum\SolrEagerFlush\Drainer\DrainResult;
-use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
-use Wazum\SolrEagerFlush\Drainer\IndexQueuePressure;
+use Wazum\SolrEagerFlush\Drainer\EagerFlushScheduler;
 use Wazum\SolrEagerFlush\EventListener\EagerFlushListener;
-use Wazum\SolrEagerFlush\Gate\EagerFlushGate;
 use Wazum\SolrEagerFlush\Site\SiteRootResolver;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
-use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final class EagerFlushListenerTest extends AbstractFunctionalTestCase
 {
     #[Test]
-    public function skipsWhenFirstGateReturnsFalse(): void
+    public function schedulesTheResolvedRootForFlushing(): void
     {
-        $drainerCalled = false;
+        $scheduledRoots = [];
         $listener = $this->buildListener(
-            gates: [$this->gate(false), $this->gate(true)],
-            onDrain: static function () use (&$drainerCalled): void {
-                $drainerCalled = true;
-            },
-        );
-
-        $listener->__invoke($this->makeFinishedEvent());
-
-        self::assertFalse($drainerCalled, 'Drainer must not run when a gate skips');
-    }
-
-    #[Test]
-    public function drainsWhenAllGatesPass(): void
-    {
-        $drainerCalled = false;
-        $listener = $this->buildListener(
-            gates: [$this->gate(true), $this->gate(true)],
-            onDrain: static function () use (&$drainerCalled): void {
-                $drainerCalled = true;
-            },
-        );
-
-        $listener->__invoke($this->makeFinishedEvent());
-
-        self::assertTrue($drainerCalled, 'Drainer must run when all gates pass');
-    }
-
-    #[Test]
-    public function swallowsExceptionsFromGate(): void
-    {
-        $throwingGate = new class implements EagerFlushGate {
-            public function shouldProceed(): bool
-            {
-                throw new RuntimeException('boom');
-            }
-        };
-        $drainerCalled = false;
-        $listener = $this->buildListener(
-            gates: [$throwingGate],
-            onDrain: static function () use (&$drainerCalled): void {
-                $drainerCalled = true;
-            },
-        );
-
-        $listener->__invoke($this->makeFinishedEvent());
-
-        self::assertFalse($drainerCalled, 'Drainer untouched after gate exception');
-    }
-
-    #[Test]
-    public function swallowsExceptionsFromDrainer(): void
-    {
-        $drainerCalled = false;
-        $listener = $this->buildListener(
-            gates: [$this->gate(true)],
-            onDrain: static function () use (&$drainerCalled): void {
-                $drainerCalled = true;
-                throw new RuntimeException('drain boom');
-            },
-        );
-
-        $listener->__invoke($this->makeFinishedEvent());
-
-        self::assertTrue($drainerCalled, 'Drainer was called (and threw, but exception was swallowed)');
-    }
-
-    #[Test]
-    public function passesResolvedSiteRootToDrainer(): void
-    {
-        $capturedRoot = -1;
-        $listener = $this->buildListener(
-            gates: [$this->gate(true)],
-            onDrain: static function (int $deltaMax, ?int $onlyRootPageId) use (&$capturedRoot): void {
-                $capturedRoot = $onlyRootPageId;
-            },
+            scheduledRoots: $scheduledRoots,
             rootResolver: $this->resolverReturning(42),
         );
 
         $listener->__invoke($this->makeFinishedEvent());
 
-        self::assertSame(42, $capturedRoot, 'Listener must scope the drain to the resolved site root');
+        self::assertSame([42], $scheduledRoots, 'The resolved site root must be scheduled for flushing');
     }
 
     #[Test]
-    public function defersToSchedulerWhenSiteCannotBeResolved(): void
+    public function defersToSchedulerTaskWhenSiteCannotBeResolved(): void
     {
-        $drainerCalled = false;
+        $scheduledRoots = [];
         $listener = $this->buildListener(
-            gates: [$this->gate(true)],
-            onDrain: static function () use (&$drainerCalled): void {
-                $drainerCalled = true;
-            },
+            scheduledRoots: $scheduledRoots,
             rootResolver: $this->resolverReturning(null),
         );
 
         $listener->__invoke($this->makeFinishedEvent());
 
-        self::assertFalse($drainerCalled, 'An unresolved site must defer to the scheduler, never fan out to all roots');
+        self::assertSame([], $scheduledRoots, 'An unresolved site must defer to the index queue worker, never fan out');
     }
 
     #[Test]
-    public function skipsWhenQueuePressureIsTooHigh(): void
+    public function swallowsExceptionsFromTheResolver(): void
     {
-        $drainerCalled = false;
+        $scheduledRoots = [];
         $listener = $this->buildListener(
-            gates: [$this->gate(true)],
-            onDrain: static function () use (&$drainerCalled): void {
-                $drainerCalled = true;
+            scheduledRoots: $scheduledRoots,
+            rootResolver: new class implements SiteRootResolver {
+                public function resolveRootPageId(DataUpdateEventInterface $event): ?int
+                {
+                    throw new RuntimeException('resolver boom');
+                }
             },
-            rootResolver: $this->resolverReturning(1),
-            underPressureLimit: false,
         );
 
         $listener->__invoke($this->makeFinishedEvent());
 
-        self::assertFalse($drainerCalled, 'Drainer must not run when the resolved site is over the pressure limit');
-    }
-
-    #[Test]
-    public function logsWarningWhenDrainReportsFailures(): void
-    {
-        $logger = new class extends AbstractLogger {
-            /** @var list<string> */
-            public array $levels = [];
-
-            public function log($level, string|Stringable $message, array $context = []): void
-            {
-                $this->levels[] = (string) $level;
-            }
-        };
-        $listener = $this->buildListener(
-            gates: [$this->gate(true)],
-            onDrain: static function (): void {},
-            result: new DrainResult(succeededRoots: [1], failedRoots: [2]),
-            logger: $logger,
-        );
-
-        $listener->__invoke($this->makeFinishedEvent());
-
-        self::assertContains(LogLevel::WARNING, $logger->levels, 'A drain with failures must be logged as a warning');
-        self::assertNotContains(LogLevel::INFO, $logger->levels);
+        self::assertSame([], $scheduledRoots, 'A throwing resolver must never break the save');
     }
 
     /**
-     * @param list<EagerFlushGate> $gates
+     * @param list<int> $scheduledRoots
      */
     private function buildListener(
-        array $gates,
-        Closure $onDrain,
-        DrainResult $result = new DrainResult(),
+        array &$scheduledRoots,
+        SiteRootResolver $rootResolver,
         LoggerInterface $logger = new NullLogger(),
-        ?SiteRootResolver $rootResolver = null,
-        bool $underPressureLimit = true,
     ): EagerFlushListener {
         return new EagerFlushListener(
-            gates: $gates,
-            drainer: new class($onDrain, $result) extends IndexQueueDrainer {
-                public function __construct(
-                    private readonly Closure $onDrain,
-                    private readonly DrainResult $result,
-                ) {}
+            rootResolver: $rootResolver,
+            scheduler: new class($scheduledRoots) extends EagerFlushScheduler {
+                /**
+                 * @param list<int> $scheduledRoots
+                 */
+                public function __construct(public array &$scheduledRoots) {}
 
-                public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
+                public function schedule(int $rootPageId): void
                 {
-                    ($this->onDrain)($deltaMax, $onlyRootPageId);
-
-                    return $this->result;
+                    $this->scheduledRoots[] = $rootPageId;
                 }
             },
-            rootResolver: $rootResolver ?? $this->resolverReturning(1),
-            pressure: new class($underPressureLimit) extends IndexQueuePressure {
-                public function __construct(private readonly bool $underLimit) {}
-
-                public function isUnderLimit(int $rootPageId): bool
-                {
-                    return $this->underLimit;
-                }
-            },
-            config: new ExtensionConfiguration(
-                typeFilter: TypeFilterMode::Both,
-                indexQueueLimit: 5,
-                deltaMax: 10,
-            ),
             logger: $logger,
         );
-    }
-
-    private function gate(bool $proceed): EagerFlushGate
-    {
-        return new class($proceed) implements EagerFlushGate {
-            public function __construct(private readonly bool $proceed) {}
-
-            public function shouldProceed(): bool
-            {
-                return $this->proceed;
-            }
-        };
     }
 
     private function resolverReturning(?int $root): SiteRootResolver
