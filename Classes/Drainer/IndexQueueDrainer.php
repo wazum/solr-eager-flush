@@ -23,8 +23,8 @@ class IndexQueueDrainer
 
     public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
     {
-        $rootPids = $this->affectedRootPids($onlyRootPageId);
-        if ([] === $rootPids) {
+        $rootPageIds = $this->affectedRootPageIds($onlyRootPageId);
+        if ([] === $rootPageIds) {
             return new DrainResult();
         }
 
@@ -34,24 +34,19 @@ class IndexQueueDrainer
 
         $this->runContext->enter();
         try {
-            foreach ($rootPids as $rootPid) {
-                if (!$this->siteEagerFlushPolicy->isEnabledForRoot($rootPid)) {
+            foreach ($rootPageIds as $rootPageId) {
+                if (!$this->isFlushableSite($rootPageId)) {
                     continue;
                 }
-                if (!$this->solrReachability->isReachable($rootPid)) {
+
+                $failureReason = $this->indexRoot($rootPageId, $deltaMax);
+                if (null === $failureReason) {
+                    $succeeded[] = $rootPageId;
                     continue;
                 }
-                try {
-                    if ($this->siteIndexer->index($rootPid, $deltaMax)) {
-                        $succeeded[] = $rootPid;
-                        continue;
-                    }
-                    $failed[] = $rootPid;
-                    $failureReasons[$rootPid] = 'IndexService::indexItems() reported failure';
-                } catch (Throwable $e) {
-                    $failed[] = $rootPid;
-                    $failureReasons[$rootPid] = $e::class . ': ' . $e->getMessage();
-                }
+
+                $failed[] = $rootPageId;
+                $failureReasons[$rootPageId] = $failureReason;
             }
         } finally {
             $this->runContext->leave();
@@ -60,10 +55,29 @@ class IndexQueueDrainer
         return new DrainResult($succeeded, $failed, $failureReasons);
     }
 
+    private function isFlushableSite(int $rootPageId): bool
+    {
+        return $this->siteEagerFlushPolicy->isEnabledForRoot($rootPageId)
+            && $this->solrReachability->isReachable($rootPageId);
+    }
+
+    private function indexRoot(int $rootPageId, int $deltaMax): ?string
+    {
+        try {
+            if ($this->siteIndexer->index($rootPageId, $deltaMax)) {
+                return null;
+            }
+
+            return 'IndexService::indexItems() reported failure';
+        } catch (Throwable $e) {
+            return $e::class . ': ' . $e->getMessage();
+        }
+    }
+
     /**
      * @return list<int>
      */
-    private function affectedRootPids(?int $onlyRootPageId): array
+    private function affectedRootPageIds(?int $onlyRootPageId): array
     {
         $queryBuilder = $this->connectionPool
             ->getConnectionForTable('tx_solr_indexqueue_item')
@@ -82,7 +96,11 @@ class IndexQueueDrainer
             );
         }
 
-        $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
+        try {
+            $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
+        } catch (Throwable) {
+            return [];
+        }
 
         return array_map(
             static fn (array $row): int => (int) $row['root'],

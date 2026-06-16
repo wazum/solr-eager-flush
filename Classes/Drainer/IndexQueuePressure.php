@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Drainer;
 
+use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 
@@ -12,7 +13,7 @@ class IndexQueuePressure
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly PendingItemPredicate $predicate,
-        private readonly ExtensionConfiguration $config,
+        private readonly ExtensionConfiguration $configuration,
     ) {}
 
     public function isUnderLimit(int $rootPageId): bool
@@ -22,14 +23,18 @@ class IndexQueuePressure
             ->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll();
 
-        $rows = $queryBuilder
-            ->select('uid')
-            ->from('tx_solr_indexqueue_item')
-            ->where(...$this->predicate->whereClauses($queryBuilder, time(), $this->config->typeFilter, $rootPageId))
-            ->setMaxResults($this->config->indexQueueLimit + 1)
-            ->executeQuery()
-            ->fetchAllAssociative();
+        try {
+            $rows = $queryBuilder
+                ->select('uid')
+                ->from('tx_solr_indexqueue_item')
+                ->where(...$this->predicate->whereClauses($queryBuilder, time(), $this->configuration->typeFilter, $rootPageId))
+                ->setMaxResults($this->configuration->indexQueueLimit + 1)
+                ->executeQuery()
+                ->fetchAllAssociative();
+        } catch (Throwable) {
+            return false;
+        }
 
-        return \count($rows) <= $this->config->indexQueueLimit;
+        return \count($rows) <= $this->configuration->indexQueueLimit;
     }
 }

@@ -18,7 +18,7 @@ class EagerFlushRunner
         private readonly iterable $gates,
         private readonly IndexQueueDrainer $drainer,
         private readonly IndexQueuePressure $pressure,
-        private readonly ExtensionConfiguration $config,
+        private readonly ExtensionConfiguration $configuration,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -40,7 +40,7 @@ class EagerFlushRunner
             }
 
             $start = microtime(true);
-            $result = $this->drainer->drain($this->config->deltaMax, $rootPageId);
+            $result = $this->drainer->drain($this->configuration->deltaMax, $rootPageId);
             $context = [
                 'duration_ms' => (int) round((microtime(true) - $start) * 1000.0),
                 'succeeded' => $result->succeededRoots,

@@ -137,7 +137,7 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
                     return $this->underLimit;
                 }
             },
-            config: new ExtensionConfiguration(
+            configuration: new ExtensionConfiguration(
                 typeFilter: TypeFilterMode::Both,
                 indexQueueLimit: 5,
                 deltaMax: 10,

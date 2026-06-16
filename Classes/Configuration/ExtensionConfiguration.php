@@ -6,7 +6,7 @@ namespace Wazum\SolrEagerFlush\Configuration;
 
 use InvalidArgumentException;
 use Throwable;
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as Core;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as CoreExtensionConfiguration;
 use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final readonly class ExtensionConfiguration
@@ -21,10 +21,10 @@ final readonly class ExtensionConfiguration
         }
     }
 
-    public static function fromCore(Core $core): self
+    public static function from(CoreExtensionConfiguration $extensionConfiguration): self
     {
         try {
-            $raw = $core->get('solr_eager_flush');
+            $raw = $extensionConfiguration->get('solr_eager_flush');
         } catch (Throwable) {
             $raw = [];
         }

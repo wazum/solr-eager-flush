@@ -45,12 +45,16 @@ final readonly class CoreSiteRootResolver implements SiteRootResolver
         $queryBuilder = $this->connectionPool->getConnectionForTable($table)->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll();
 
-        $pid = $queryBuilder
-            ->select('pid')
-            ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
-            ->executeQuery()
-            ->fetchOne();
+        try {
+            $pid = $queryBuilder
+                ->select('pid')
+                ->from($table)
+                ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
+                ->executeQuery()
+                ->fetchOne();
+        } catch (Throwable) {
+            return null;
+        }
 
         return false === $pid ? null : (int) $pid;
     }

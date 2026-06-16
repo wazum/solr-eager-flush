@@ -24,9 +24,9 @@ services:
             $gates: !tagged_iterator solr_eager_flush.gate
 
     Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration:
-        factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'fromCore']
+        factory: ['Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration', 'from']
         arguments:
-            $core: '@TYPO3\CMS\Core\Configuration\ExtensionConfiguration'
+            $extensionConfiguration: '@TYPO3\CMS\Core\Configuration\ExtensionConfiguration'
 
     _instanceof:
         Wazum\SolrEagerFlush\Gate\EagerFlushGate:

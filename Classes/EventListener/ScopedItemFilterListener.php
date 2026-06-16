@@ -14,7 +14,7 @@ final readonly class ScopedItemFilterListener
     public function __construct(
         private EagerFlushRunContext $runContext,
         private ItemTypeMatcher $matcher,
-        private ExtensionConfiguration $config,
+        private ExtensionConfiguration $configuration,
     ) {}
 
     public function __invoke(BeforeItemsAreIndexedEvent $event): void
@@ -25,7 +25,7 @@ final readonly class ScopedItemFilterListener
 
         $filtered = array_values(array_filter(
             $event->getItems(),
-            fn ($item) => $this->matcher->matches($item, $this->config->typeFilter),
+            fn ($item) => $this->matcher->matches($item, $this->configuration->typeFilter),
         ));
         $event->setItems($filtered);
     }

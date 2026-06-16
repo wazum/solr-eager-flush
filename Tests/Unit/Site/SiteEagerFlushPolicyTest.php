@@ -80,12 +80,12 @@ final class SiteEagerFlushPolicyTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param array<string, mixed> $configuration
      */
-    private function policy(array $config, LoggerInterface $logger = new NullLogger()): SiteConfigEagerFlushPolicy
+    private function policy(array $configuration, LoggerInterface $logger = new NullLogger()): SiteConfigEagerFlushPolicy
     {
         $siteFinder = $this->createMock(SiteFinder::class);
-        $siteFinder->method('getSiteByRootPageId')->willReturn(new Site('test', 1, $config + ['base' => '/']));
+        $siteFinder->method('getSiteByRootPageId')->willReturn(new Site('test', 1, $configuration + ['base' => '/']));
 
         return new SiteConfigEagerFlushPolicy($siteFinder, $logger);
     }

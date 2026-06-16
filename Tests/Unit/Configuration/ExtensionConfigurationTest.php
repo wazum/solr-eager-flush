@@ -7,7 +7,7 @@ namespace Wazum\SolrEagerFlush\Tests\Unit\Configuration;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as Core;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as CoreExtensionConfiguration;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
@@ -16,76 +16,76 @@ final class ExtensionConfigurationTest extends TestCase
     #[Test]
     public function parsesValidConfiguration(): void
     {
-        $core = $this->createMock(Core::class);
-        $core->method('get')->with('solr_eager_flush')->willReturn([
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->with('solr_eager_flush')->willReturn([
             'typeFilter' => 'both',
             'indexQueueLimit' => '5',
             'deltaMax' => '10',
         ]);
 
-        $config = ExtensionConfiguration::fromCore($core);
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
 
-        self::assertSame(TypeFilterMode::Both, $config->typeFilter);
-        self::assertSame(5, $config->indexQueueLimit);
-        self::assertSame(10, $config->deltaMax);
+        self::assertSame(TypeFilterMode::Both, $configuration->typeFilter);
+        self::assertSame(5, $configuration->indexQueueLimit);
+        self::assertSame(10, $configuration->deltaMax);
     }
 
     #[Test]
     public function appliesDefaultsWhenKeysMissing(): void
     {
-        $core = $this->createMock(Core::class);
-        $core->method('get')->willReturn([]);
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn([]);
 
-        $config = ExtensionConfiguration::fromCore($core);
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
 
-        self::assertSame(TypeFilterMode::Records, $config->typeFilter);
-        self::assertSame(5, $config->indexQueueLimit);
-        self::assertSame(10, $config->deltaMax);
+        self::assertSame(TypeFilterMode::Records, $configuration->typeFilter);
+        self::assertSame(5, $configuration->indexQueueLimit);
+        self::assertSame(10, $configuration->deltaMax);
     }
 
     #[Test]
     public function fallsBackToDefaultTypeFilterOnUnknownValue(): void
     {
-        $core = $this->createMock(Core::class);
-        $core->method('get')->willReturn(['typeFilter' => 'banana']);
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn(['typeFilter' => 'banana']);
 
-        $config = ExtensionConfiguration::fromCore($core);
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
 
-        self::assertSame(TypeFilterMode::Records, $config->typeFilter);
+        self::assertSame(TypeFilterMode::Records, $configuration->typeFilter);
     }
 
     #[Test]
     public function fallsBackToDefaultIndexQueueLimitWhenBelowOne(): void
     {
-        $core = $this->createMock(Core::class);
-        $core->method('get')->willReturn(['indexQueueLimit' => '0']);
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn(['indexQueueLimit' => '0']);
 
-        $config = ExtensionConfiguration::fromCore($core);
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
 
-        self::assertSame(5, $config->indexQueueLimit);
+        self::assertSame(5, $configuration->indexQueueLimit);
     }
 
     #[Test]
     public function fallsBackToDefaultDeltaMaxWhenBelowOne(): void
     {
-        $core = $this->createMock(Core::class);
-        $core->method('get')->willReturn(['deltaMax' => '-1']);
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn(['deltaMax' => '-1']);
 
-        $config = ExtensionConfiguration::fromCore($core);
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
 
-        self::assertSame(10, $config->deltaMax);
+        self::assertSame(10, $configuration->deltaMax);
     }
 
     #[Test]
     public function clampsDeltaMaxUpToIndexQueueLimit(): void
     {
-        $core = $this->createMock(Core::class);
-        $core->method('get')->willReturn(['indexQueueLimit' => '8', 'deltaMax' => '3']);
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn(['indexQueueLimit' => '8', 'deltaMax' => '3']);
 
-        $config = ExtensionConfiguration::fromCore($core);
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
 
-        self::assertSame(8, $config->indexQueueLimit);
-        self::assertSame(8, $config->deltaMax, 'deltaMax is raised to indexQueueLimit to avoid type-filter starvation');
+        self::assertSame(8, $configuration->indexQueueLimit);
+        self::assertSame(8, $configuration->deltaMax, 'deltaMax is raised to indexQueueLimit to avoid type-filter starvation');
     }
 
     #[Test]

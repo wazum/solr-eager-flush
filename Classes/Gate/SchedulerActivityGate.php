@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wazum\SolrEagerFlush\Gate;
 
 use ApacheSolrForTypo3\Solr\Task\IndexQueueWorkerTask;
+use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Scheduler\Task\TaskSerializer;
 
@@ -22,16 +23,20 @@ final readonly class SchedulerActivityGate implements EagerFlushGate
             ->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll();
 
-        $rows = $queryBuilder
-            ->select('serialized_task_object', 'serialized_executions')
-            ->from('tx_scheduler_task')
-            ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-                $queryBuilder->expr()->isNotNull('serialized_executions'),
-            )
-            ->executeQuery()
-            ->fetchAllAssociative();
+        try {
+            $rows = $queryBuilder
+                ->select('serialized_task_object', 'serialized_executions')
+                ->from('tx_scheduler_task')
+                ->where(
+                    $queryBuilder->expr()->eq('deleted', 0),
+                    $queryBuilder->expr()->eq('disable', 0),
+                    $queryBuilder->expr()->isNotNull('serialized_executions'),
+                )
+                ->executeQuery()
+                ->fetchAllAssociative();
+        } catch (Throwable) {
+            return false;
+        }
 
         foreach ($rows as $row) {
             if ('' === (string) $row['serialized_executions']) {
