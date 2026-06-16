@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-16
+
 ### Fixed
 - The `typeFilter` is now applied when selecting index-queue items, not after. A backlog of excluded item types (for example pages in the default `records` mode) could previously fill the indexing window and starve an eligible record, leaving it unindexed while the run still reported success.
 
@@ -41,7 +43,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Compatibility
 - TYPO3 13.4 LTS and 14.3+, PHP 8.2–8.4. On TYPO3 14, `apache-solr-for-typo3/solr` is currently a pre-release.
 
-[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.3.0
 [1.2.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.2.0
 [1.1.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.1.0
 [1.0.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.0.0
