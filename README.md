@@ -33,22 +33,40 @@ composer require wazum/solr-eager-flush
 
 ## How it works
 
-After a record is saved, ext:solr updates its index queue and fires a `ProcessingFinishedEvent`. The extension listens for that event, resolves the saved record's site and schedules it for a flush at the end of the request. Several saves in one request are collapsed into a single flush per affected site.
+After a record is saved, ext:solr updates its index queue and fires a `ProcessingFinishedEvent`. This extension listens for that event, resolves the saved record's site, and schedules an index flush for the end of the request. Several saves in one request collapse into a single flush per affected site.
 
-When the request ends, the flush runs in the same already-booted process. On PHP-FPM and LiteSpeed the response is released to the editor first (`fastcgi_finish_request()` / `litespeed_finish_request()`), so the save returns immediately and the indexing happens afterwards without the editor waiting for it — this is the case worth having, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM). On other per-request SAPIs (Apache `mod_php`, CGI) the flush still runs at the end of the request, but the connection cannot be released early, so the editor waits for it much as it would for inline indexing. Under the CLI — the scheduler's own Index Queue Worker, command-line imports — the flush runs inline; there is no client to release.
+### When the flush runs
 
-The flush indexes the queued items right away — unless a gate tells it to back off:
+The flush runs at the end of the same, already-booted request — but whether the editor waits for it depends on the server API:
+
+- **PHP-FPM and LiteSpeed** — the response is released to the editor first (`fastcgi_finish_request()` / `litespeed_finish_request()`), so the save returns immediately and indexing happens afterwards, with no waiting. This is the case the extension is built for, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM).
+- **Other per-request SAPIs** (Apache `mod_php`, CGI) — the flush still runs at the end of the request, but the connection can't be released early, so the editor waits for it much as they would for inline indexing.
+
+> [!NOTE]
+> Even when the response is released early, the PHP process stays busy until the flush finishes — it counts against your FPM worker pool (`pm.max_children`). The gates and `deltaMax` keep each flush bounded.
+
+> [!WARNING]
+> Persistent worker runtimes (FrankenPHP worker mode) are not supported for the eager flush: their process is reused across requests, so the end-of-request hook would not fire per save. Leave such a site on queue-based indexing — opt it out with the per-site key below.
+
+### When the flush backs off
+
+Before indexing, two gates can tell the flush to stand down and leave the work to the scheduler:
 
 - **Pressure gate** — skips when more than `indexQueueLimit` items are already pending, leaving bulk changes to the scheduler.
 - **Scheduler-activity gate** — skips while an Index Queue Worker task is running, to avoid competing with it.
 
-The flush is scoped to the saved record's site; if that site can't be resolved, the flush is skipped and the items are left to the scheduler (a single save never fans out to other sites). The site is also skipped when eager flush is disabled for it, or when its Solr doesn't answer a quick ping — a Solr that refuses the connection fails instantly (configure a short Solr connection timeout so an *unreachable* host can't stall the ping either). Otherwise its items are indexed up to `deltaMax`, limited to the configured `typeFilter`. A failure is logged and never breaks the save.
+### What gets indexed
 
-> [!NOTE]
-> Even with the response released early, the PHP process stays busy until the flush finishes — it counts against your FPM worker pool (`pm.max_children`). The gates and `deltaMax` keep each flush bounded.
+The flush is scoped to the saved record's site — a single save never fans out to other sites. The site is skipped when:
 
-> [!NOTE]
-> Persistent worker runtimes (FrankenPHP worker mode) are not supported for the eager flush: their process is reused across requests, so the end-of-request hook would not fire per save. Leave such a site on queue-based indexing — opt it out with the per-site key below.
+- it can't be resolved (the items are left to the scheduler),
+- eager flush is disabled for it, or
+- its Solr doesn't answer a quick ping.
+
+Otherwise the site's queued items are indexed right away, up to `deltaMax` and limited to the configured `typeFilter`. Any failure is logged and never breaks the save.
+
+> [!TIP]
+> Configure a short Solr connection timeout. A Solr that *refuses* the connection fails instantly, but an *unreachable* host could otherwise stall the ping.
 
 ## Configuration
 
