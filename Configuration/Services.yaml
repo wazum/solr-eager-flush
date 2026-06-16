@@ -6,6 +6,8 @@ services:
 
     Wazum\SolrEagerFlush\:
         resource: '../Classes/*'
+        exclude:
+            - '../Classes/Drainer/TypeFilteringQueue.php'
 
     Wazum\SolrEagerFlush\Drainer\SiteIndexer: '@Wazum\SolrEagerFlush\Drainer\IndexServiceSiteIndexer'
 
@@ -31,12 +33,6 @@ services:
     _instanceof:
         Wazum\SolrEagerFlush\Gate\EagerFlushGate:
             tags: ['solr_eager_flush.gate']
-
-    Wazum\SolrEagerFlush\EventListener\ScopedItemFilterListener:
-        tags:
-            - name: event.listener
-              identifier: 'solr-eager-flush/scoped-item-filter'
-              event: ApacheSolrForTypo3\Solr\Event\Indexing\BeforeItemsAreIndexedEvent
 
     Wazum\SolrEagerFlush\EventListener\EagerFlushListener:
         tags:

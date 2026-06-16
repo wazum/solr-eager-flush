@@ -8,7 +8,6 @@ use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use Wazum\SolrEagerFlush\Drainer\EagerFlushRunContext;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
 use Wazum\SolrEagerFlush\Drainer\SiteIndexer;
@@ -22,14 +21,12 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
     public function drainExitsCleanlyWhenIndexQueueIsEmpty(): void
     {
         $indexer = $this->recordingIndexer();
-        $runContext = new EagerFlushRunContext();
 
-        $result = $this->buildDrainer($runContext, $indexer)->drain(10);
+        $result = $this->buildDrainer($indexer)->drain(10);
 
         self::assertSame([], $indexer->attempted, 'No site indexed when queue is empty');
         self::assertSame([], $result->succeededRoots);
         self::assertSame([], $result->failedRoots);
-        self::assertFalse($runContext->isActive());
     }
 
     #[Test]
@@ -39,7 +36,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         $this->insertPendingItem(root: 2);
         $indexer = $this->recordingIndexer();
 
-        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10);
+        $result = $this->buildDrainer($indexer)->drain(10);
 
         self::assertEqualsCanonicalizing([1, 2], $indexer->attempted);
         self::assertEqualsCanonicalizing([1, 2], $result->succeededRoots);
@@ -65,14 +62,12 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
                 return true;
             }
         };
-        $runContext = new EagerFlushRunContext();
 
-        $result = $this->buildDrainer($runContext, $indexer)->drain(10);
+        $result = $this->buildDrainer($indexer)->drain(10);
 
         self::assertEqualsCanonicalizing([1, 2], $indexer->attempted, 'A failing root must not abort the others');
         self::assertSame([2], $result->succeededRoots);
         self::assertSame([1], $result->failedRoots);
-        self::assertFalse($runContext->isActive(), 'RunContext released despite a failing root');
     }
 
     #[Test]
@@ -91,7 +86,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             }
         };
 
-        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10);
+        $result = $this->buildDrainer($indexer)->drain(10);
 
         self::assertSame([], $result->succeededRoots);
         self::assertSame([1], $result->failedRoots);
@@ -108,7 +103,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             }
         };
 
-        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10);
+        $result = $this->buildDrainer($indexer)->drain(10);
 
         self::assertSame([1], $result->failedRoots);
         self::assertArrayHasKey(1, $result->failureReasons);
@@ -122,7 +117,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         $this->insertPendingItem(root: 2);
         $indexer = $this->recordingIndexer();
 
-        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10, onlyRootPageId: 1);
+        $result = $this->buildDrainer($indexer)->drain(10, onlyRootPageId: 1);
 
         self::assertSame([1], $indexer->attempted, 'Only the scoped root is indexed');
         self::assertSame([1], $result->succeededRoots);
@@ -135,7 +130,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         $this->insertPendingItem(root: 2);
         $indexer = $this->recordingIndexer();
 
-        $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10, onlyRootPageId: null);
+        $this->buildDrainer($indexer)->drain(10, onlyRootPageId: null);
 
         self::assertEqualsCanonicalizing([1, 2], $indexer->attempted, 'Unresolved scope flushes all pending roots');
     }
@@ -146,7 +141,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         $this->insertPendingItem(root: 1);
         $indexer = $this->recordingIndexer();
 
-        $this->buildDrainer(new EagerFlushRunContext(), $indexer)->drain(10, onlyRootPageId: 999);
+        $this->buildDrainer($indexer)->drain(10, onlyRootPageId: 999);
 
         self::assertSame([], $indexer->attempted, 'A resolved-but-not-pending root does not fall back to all roots');
     }
@@ -164,7 +159,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             }
         };
 
-        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer, $policy)->drain(10);
+        $result = $this->buildDrainer($indexer, $policy)->drain(10);
 
         self::assertSame([1], $indexer->attempted, 'Root 2 (eager flush disabled for its site) is not indexed');
         self::assertSame([1], $result->succeededRoots);
@@ -184,7 +179,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             }
         };
 
-        $result = $this->buildDrainer(new EagerFlushRunContext(), $indexer, reachability: $reachability)->drain(10);
+        $result = $this->buildDrainer($indexer, reachability: $reachability)->drain(10);
 
         self::assertSame([1], $indexer->attempted, 'Root 2 (Solr unreachable) is not indexed');
         self::assertSame([1], $result->succeededRoots);
@@ -192,7 +187,6 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
     }
 
     private function buildDrainer(
-        EagerFlushRunContext $runContext,
         SiteIndexer $indexer,
         ?SiteEagerFlushPolicy $policy = null,
         ?SolrReachability $reachability = null,
@@ -200,7 +194,6 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         return new IndexQueueDrainer(
             GeneralUtility::makeInstance(ConnectionPool::class),
             new PendingItemPredicate(),
-            $runContext,
             $indexer,
             $policy ?? $this->allEnabledPolicy(),
             $reachability ?? $this->alwaysReachable(),

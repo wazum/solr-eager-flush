@@ -15,7 +15,6 @@ class IndexQueueDrainer
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly PendingItemPredicate $predicate,
-        private readonly EagerFlushRunContext $runContext,
         private readonly SiteIndexer $siteIndexer,
         private readonly SiteEagerFlushPolicy $siteEagerFlushPolicy,
         private readonly SolrReachability $solrReachability,
@@ -32,24 +31,19 @@ class IndexQueueDrainer
         $failed = [];
         $failureReasons = [];
 
-        $this->runContext->enter();
-        try {
-            foreach ($rootPageIds as $rootPageId) {
-                if (!$this->isFlushableSite($rootPageId)) {
-                    continue;
-                }
-
-                $failureReason = $this->indexRoot($rootPageId, $deltaMax);
-                if (null === $failureReason) {
-                    $succeeded[] = $rootPageId;
-                    continue;
-                }
-
-                $failed[] = $rootPageId;
-                $failureReasons[$rootPageId] = $failureReason;
+        foreach ($rootPageIds as $rootPageId) {
+            if (!$this->isFlushableSite($rootPageId)) {
+                continue;
             }
-        } finally {
-            $this->runContext->leave();
+
+            $failureReason = $this->indexRoot($rootPageId, $deltaMax);
+            if (null === $failureReason) {
+                $succeeded[] = $rootPageId;
+                continue;
+            }
+
+            $failed[] = $rootPageId;
+            $failureReasons[$rootPageId] = $failureReason;
         }
 
         return new DrainResult($succeeded, $failed, $failureReasons);
