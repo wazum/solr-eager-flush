@@ -41,6 +41,7 @@ class EagerFlushScheduler
     {
         $rootPageIds = array_keys($this->rootPageIds);
         $this->rootPageIds = [];
+        $this->flushDeferred = false;
         if ([] === $rootPageIds) {
             return;
         }

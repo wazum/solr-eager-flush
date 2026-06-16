@@ -118,6 +118,31 @@ final class EagerFlushSchedulerTest extends TestCase
         self::assertSame([7], $runRoots, 'A flushed root must not be drained a second time');
     }
 
+    #[Test]
+    public function reArmsTheDeferredFlushForSchedulesArrivingAfterAFlush(): void
+    {
+        $runRoots = [];
+        $deferredTasks = [];
+        $scheduler = $this->buildScheduler(
+            deferralSupported: true,
+            runRoots: $runRoots,
+            onDefer: static function (callable $task) use (&$deferredTasks): void {
+                $deferredTasks[] = $task;
+            },
+        );
+
+        $scheduler->schedule(7);
+        self::assertCount(1, $deferredTasks);
+        $deferredTasks[0]();
+
+        // On a reused process a save after the flush must register a fresh deferred task
+        $scheduler->schedule(9);
+        self::assertCount(2, $deferredTasks, 'A save after a flush must re-arm the deferred flush');
+        $deferredTasks[1]();
+
+        self::assertSame([7, 9], $runRoots);
+    }
+
     /**
      * @param list<int> $runRoots
      * @param list<string>|null $events
