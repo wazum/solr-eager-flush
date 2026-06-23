@@ -12,7 +12,7 @@
 
 Push editorial changes into Solr **the moment a record is saved**, instead of waiting for the next index-queue scheduler run.
 
-With `apache-solr-for-typo3/solr` in its default `monitoringType = 0` (Immediate) mode, saving a record only *enqueues* it in `tx_solr_indexqueue_item`; the document reaches Solr later, when the **Index Queue Worker** scheduler task next runs. This extension closes that gap: it indexes the freshly queued items at the end of the save request — on PHP-FPM and LiteSpeed *after* the response has been sent to the editor, so the save itself stays fast. Built-in gates back off under queue pressure or while the scheduler is already working, so the eager flush stays out of the way when it would cost too much.
+With `apache-solr-for-typo3/solr` in its default [`monitoringType = 0` (Immediate)](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Configuration/Reference/ExtensionSettings.html) mode, saving a record only *enqueues* it in `tx_solr_indexqueue_item`; the document reaches Solr later, when the [**Index Queue Worker**](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Backend/IndexQueue.html) scheduler task next runs. This extension closes that gap: it indexes the freshly queued items at the end of the save request — on PHP-FPM and LiteSpeed *after* the response has been sent to the editor, so the save itself stays fast. Built-in gates back off under queue pressure or while the scheduler is already working, so the eager flush stays out of the way when it would cost too much.
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
@@ -23,7 +23,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 - PHP 8.2, 8.3 or 8.4
 
 > [!NOTE]
-> On TYPO3 14, `apache-solr-for-typo3/solr` is currently available only as a pre-release (`^14.0@beta`). Allow beta stability in your project (`composer config minimum-stability beta && composer config prefer-stable true`) before requiring this extension there.
+> On TYPO3 14, `apache-solr-for-typo3/solr` is currently available only as a pre-release (`^14.0@beta`). Allow beta stability in your project ([`composer config minimum-stability beta && composer config prefer-stable true`](https://getcomposer.org/doc/04-schema.md#minimum-stability)) before requiring this extension there.
 
 ## Installation
 
@@ -33,20 +33,20 @@ composer require wazum/solr-eager-flush
 
 ## How it works
 
-After a record is saved, ext:solr updates its index queue and fires a `ProcessingFinishedEvent`. This extension listens for that event, resolves the saved record's site, and schedules an index flush for the end of the request. Several saves in one request collapse into a single flush per affected site.
+After a record is saved, ext:solr updates its index queue and fires a [`ProcessingFinishedEvent`](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Development/Events.html). This extension listens for that event, resolves the saved record's site, and schedules an index flush for the end of the request. Several saves in one request collapse into a single flush per affected site.
 
 ### When the flush runs
 
 The flush runs at the end of the same, already-booted request — but whether the editor waits for it depends on the server API:
 
-- **PHP-FPM and LiteSpeed** — the response is released to the editor first (`fastcgi_finish_request()` / `litespeed_finish_request()`), so the save returns immediately and indexing happens afterwards, with no waiting. This is the case the extension is built for, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM).
+- **PHP-FPM and LiteSpeed** — the response is released to the editor first ([`fastcgi_finish_request()`](https://www.php.net/manual/en/function.fastcgi-finish-request.php), or its LiteSpeed equivalent [`litespeed_finish_request()`](https://www.litespeedtech.com/open-source/litespeed-sapi/lsapi-release-log)), so the save returns immediately and indexing happens afterwards, with no waiting. This is the case the extension is built for, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM).
 - **Other per-request SAPIs** (Apache `mod_php`, CGI) — the flush still runs at the end of the request, but the connection can't be released early, so the editor waits for it much as they would for inline indexing.
 
 > [!NOTE]
-> Even when the response is released early, the PHP process stays busy until the flush finishes — it counts against your FPM worker pool (`pm.max_children`). The gates and `deltaMax` keep each flush bounded.
+> Even when the response is released early, the PHP process stays busy until the flush finishes — it counts against your FPM worker pool ([`pm.max_children`](https://www.php.net/manual/en/install.fpm.configuration.php)). The gates and `deltaMax` keep each flush bounded.
 
 > [!WARNING]
-> Persistent worker runtimes (FrankenPHP worker mode) are not supported for the eager flush: their process is reused across requests, so the end-of-request hook would not fire per save. Leave such a site on queue-based indexing — opt it out with the per-site key below.
+> Persistent worker runtimes ([FrankenPHP worker mode](https://frankenphp.dev/docs/worker/)) are not supported for the eager flush: their process is reused across requests, so the end-of-request hook would not fire per save. Leave such a site on queue-based indexing — opt it out with the per-site key below.
 
 ### When the flush backs off
 
