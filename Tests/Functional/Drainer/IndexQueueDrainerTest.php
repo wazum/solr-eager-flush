@@ -6,6 +6,7 @@ namespace Wazum\SolrEagerFlush\Tests\Functional\Drainer;
 
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
@@ -169,6 +170,18 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
 
         self::assertSame([1], $indexer->attempted);
         self::assertSame([1], $result->succeededRoots);
+    }
+
+    #[Test]
+    public function surfacesADatabaseFailureInsteadOfReportingAnEmptyDrain(): void
+    {
+        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable('tx_solr_indexqueue_item');
+        $connection->executeStatement('DROP TABLE ' . $connection->quoteIdentifier('tx_solr_indexqueue_item'));
+
+        $this->expectException(Throwable::class);
+
+        $this->buildDrainer($this->recordingIndexer())->drain(10);
     }
 
     #[Test]

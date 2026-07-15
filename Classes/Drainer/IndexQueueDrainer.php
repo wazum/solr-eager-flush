@@ -92,11 +92,7 @@ class IndexQueueDrainer
             );
         }
 
-        try {
-            $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
-        } catch (Throwable) {
-            return [];
-        }
+        $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
 
         return array_map(
             static fn (array $row): int => (int) $row['root'],
