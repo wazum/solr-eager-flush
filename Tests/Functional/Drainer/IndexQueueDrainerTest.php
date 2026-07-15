@@ -8,12 +8,14 @@ use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Drainer\IndexQueueDrainer;
 use Wazum\SolrEagerFlush\Drainer\PendingItemPredicate;
 use Wazum\SolrEagerFlush\Drainer\SiteIndexer;
 use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
 use Wazum\SolrEagerFlush\Site\SolrReachability;
 use Wazum\SolrEagerFlush\Tests\Functional\AbstractFunctionalTestCase;
+use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
 {
@@ -147,6 +149,29 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
     }
 
     #[Test]
+    public function excludesRootsWhoseOnlyPendingItemsAreOfAFilteredType(): void
+    {
+        $this->insertPendingItem(root: 1, itemType: 'pages');
+        $indexer = $this->recordingIndexer();
+
+        $this->buildDrainer($indexer, typeFilter: TypeFilterMode::Records)->drain(10);
+
+        self::assertSame([], $indexer->attempted, 'A root with only excluded-type items is not treated as affected');
+    }
+
+    #[Test]
+    public function includesRootsWithPendingItemsMatchingTheTypeFilter(): void
+    {
+        $this->insertPendingItem(root: 1, itemType: 'tx_news_domain_model_news');
+        $indexer = $this->recordingIndexer();
+
+        $result = $this->buildDrainer($indexer, typeFilter: TypeFilterMode::Records)->drain(10);
+
+        self::assertSame([1], $indexer->attempted);
+        self::assertSame([1], $result->succeededRoots);
+    }
+
+    #[Test]
     public function skipsRootsWhereSiteDisablesEagerFlush(): void
     {
         $this->insertPendingItem(root: 1);
@@ -190,6 +215,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         SiteIndexer $indexer,
         ?SiteEagerFlushPolicy $policy = null,
         ?SolrReachability $reachability = null,
+        TypeFilterMode $typeFilter = TypeFilterMode::Both,
     ): IndexQueueDrainer {
         return new IndexQueueDrainer(
             GeneralUtility::makeInstance(ConnectionPool::class),
@@ -197,6 +223,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             $indexer,
             $policy ?? $this->allEnabledPolicy(),
             $reachability ?? $this->alwaysReachable(),
+            new ExtensionConfiguration($typeFilter, indexQueueLimit: 5, deltaMax: 10),
         );
     }
 
@@ -225,16 +252,16 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         return new RecordingSiteIndexer();
     }
 
-    private function insertPendingItem(int $root): void
+    private function insertPendingItem(int $root, string $itemType = 'pages'): void
     {
         $now = time();
         GeneralUtility::makeInstance(ConnectionPool::class)
             ->getConnectionForTable('tx_solr_indexqueue_item')
             ->insert('tx_solr_indexqueue_item', [
                 'root' => $root,
-                'item_type' => 'pages',
+                'item_type' => $itemType,
                 'item_uid' => $root,
-                'indexing_configuration' => 'pages',
+                'indexing_configuration' => $itemType,
                 'changed' => $now,
                 'indexed' => 0,
                 'errors' => '',

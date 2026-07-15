@@ -7,6 +7,7 @@ namespace Wazum\SolrEagerFlush\Drainer;
 use Throwable;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Site\SiteEagerFlushPolicy;
 use Wazum\SolrEagerFlush\Site\SolrReachability;
 
@@ -18,6 +19,7 @@ class IndexQueueDrainer
         private readonly SiteIndexer $siteIndexer,
         private readonly SiteEagerFlushPolicy $siteEagerFlushPolicy,
         private readonly SolrReachability $solrReachability,
+        private readonly ExtensionConfiguration $configuration,
     ) {}
 
     public function drain(int $deltaMax, ?int $onlyRootPageId = null): DrainResult
@@ -82,7 +84,7 @@ class IndexQueueDrainer
             ->select('root')
             ->distinct()
             ->from('tx_solr_indexqueue_item')
-            ->where(...$this->predicate->whereClauses($queryBuilder, time()));
+            ->where(...$this->predicate->whereClauses($queryBuilder, time(), $this->configuration->typeFilter));
 
         if (null !== $onlyRootPageId) {
             $queryBuilder->andWhere(
