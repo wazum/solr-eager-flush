@@ -81,6 +81,12 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 > [!NOTE]
 > `deltaMax` is automatically raised to at least `indexQueueLimit`. Otherwise the `deltaMax`-sized indexing window could be filled by items the `typeFilter` then discards, leaving allowed items unflushed until the next scheduler run.
 
+> [!NOTE]
+> Editing a content element (`tt_content`) enqueues its **containing page**, not a `tt_content` item. In the default `records` mode those page items are excluded, so ordinary content edits are not eager-flushed — set `typeFilter` to `pages` or `both` if you want content edits to reach Solr immediately.
+
+> [!NOTE]
+> "Immediate" means the document reaches Solr at the end of the save request. Whether it becomes *searchable* right away still depends on your ext:solr/Solr commit configuration (hard commit vs. auto/soft commit). With commits disabled the document is indexed but stays invisible until Solr next commits; hard-committing on every editorial save, on the other hand, is expensive.
+
 ### Per-site control
 
 Eager flush is enabled for every site by default. To run it only on some sites — for example, immediate indexing on a public website but queue-based indexing on an intranet — opt a site out in its site configuration (`config/sites/<identifier>/config.yaml`):
