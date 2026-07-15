@@ -23,11 +23,11 @@ final readonly class SiteConfigEagerFlushPolicy implements SiteEagerFlushPolicy
         try {
             $configuration = $this->siteFinder->getSiteByRootPageId($rootPageId)->getConfiguration();
         } catch (SiteNotFoundException) {
-            return true;
+            return false;
         } catch (Throwable $e) {
             $this->logger->warning('eager-flush: failed to read site configuration', ['exception' => $e]);
 
-            return true;
+            return false;
         }
 
         return filter_var($configuration[self::SITE_SETTING] ?? true, \FILTER_VALIDATE_BOOLEAN);

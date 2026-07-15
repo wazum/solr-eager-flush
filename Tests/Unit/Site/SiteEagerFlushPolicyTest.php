@@ -47,19 +47,19 @@ final class SiteEagerFlushPolicyTest extends TestCase
     }
 
     #[Test]
-    public function enabledWhenSiteCannotBeResolved(): void
+    public function disabledWhenSiteCannotBeResolved(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByRootPageId')->willThrowException(new SiteNotFoundException('no site', 1));
 
-        self::assertTrue(
+        self::assertFalse(
             (new SiteConfigEagerFlushPolicy($siteFinder, new NullLogger()))->isEnabledForRoot(1),
-            'Unresolvable site must not silently disable eager flush',
+            'An unresolvable site must fail closed, leaving the work to the scheduler',
         );
     }
 
     #[Test]
-    public function logsUnexpectedErrorAndStaysEnabled(): void
+    public function disabledAndLogsWhenSiteConfigCannotBeRead(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByRootPageId')->willThrowException(new RuntimeException('database is down'));
@@ -75,7 +75,7 @@ final class SiteEagerFlushPolicyTest extends TestCase
 
         $policy = new SiteConfigEagerFlushPolicy($siteFinder, $logger);
 
-        self::assertTrue($policy->isEnabledForRoot(1));
+        self::assertFalse($policy->isEnabledForRoot(1), 'An unreadable site configuration must fail closed');
         self::assertContains(LogLevel::WARNING, $logger->levels, 'An unexpected site lookup error must be logged');
     }
 
