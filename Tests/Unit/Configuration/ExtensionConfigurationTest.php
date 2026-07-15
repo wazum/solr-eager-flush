@@ -98,4 +98,37 @@ final class ExtensionConfigurationTest extends TestCase
             deltaMax: 10,
         );
     }
+
+    #[Test]
+    public function clampsIndexQueueLimitToTheMaximum(): void
+    {
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn(['indexQueueLimit' => '100000']);
+
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
+
+        self::assertSame(100, $configuration->indexQueueLimit);
+    }
+
+    #[Test]
+    public function clampsDeltaMaxToTheMaximum(): void
+    {
+        $coreExtensionConfiguration = $this->createMock(CoreExtensionConfiguration::class);
+        $coreExtensionConfiguration->method('get')->willReturn(['deltaMax' => '100000']);
+
+        $configuration = ExtensionConfiguration::from($coreExtensionConfiguration);
+
+        self::assertSame(100, $configuration->deltaMax);
+    }
+
+    #[Test]
+    public function constructorRejectsValuesAboveTheMaximum(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ExtensionConfiguration(
+            typeFilter: TypeFilterMode::Both,
+            indexQueueLimit: 101,
+            deltaMax: 101,
+        );
+    }
 }

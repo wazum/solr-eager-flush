@@ -75,8 +75,8 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 | Setting | Default | Description |
 |---|---|---|
 | `typeFilter` | `records` | Which item types to eager-flush: `records`, `pages`, or `both`. Defaults to `records` because ext:solr indexes a page by rendering it, which is comparatively heavy. With the response released early the editor no longer waits for it, but the PHP process does — set `pages` or `both` to opt in. |
-| `indexQueueLimit` | `5` | Skip the eager flush when more than this many pending index-queue items already exist. |
-| `deltaMax` | `10` | Maximum index-queue items to index per invocation, per affected site root. |
+| `indexQueueLimit` | `5` | Skip the eager flush when more than this many pending index-queue items already exist. Clamped to `100`. |
+| `deltaMax` | `10` | Maximum index-queue items to index per invocation, per affected site root. Clamped to `100` to keep a single request's synchronous flush bounded. |
 
 > [!NOTE]
 > `deltaMax` is automatically raised to at least `indexQueueLimit`. Otherwise the `deltaMax`-sized indexing window could be filled by items the `typeFilter` then discards, leaving allowed items unflushed until the next scheduler run.
