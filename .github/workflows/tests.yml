@@ -72,8 +72,10 @@ jobs:
           - { php: '8.2', typo3: '^13.4', stability: stable }
           - { php: '8.3', typo3: '^13.4', stability: stable }
           - { php: '8.4', typo3: '^13.4', stability: stable }
+          - { php: '8.5', typo3: '^13.4', stability: stable }
           - { php: '8.3', typo3: '^14.3', stability: beta }
           - { php: '8.4', typo3: '^14.3', stability: beta }
+          - { php: '8.5', typo3: '^14.3', stability: beta }
     steps:
       - uses: actions/checkout@v4
 

@@ -7,7 +7,7 @@
 [![Tests](https://github.com/wazum/solr-eager-flush/actions/workflows/tests.yml/badge.svg)](https://github.com/wazum/solr-eager-flush/actions/workflows/tests.yml)
 [![Packagist Version](https://img.shields.io/packagist/v/wazum/solr-eager-flush.svg)](https://packagist.org/packages/wazum/solr-eager-flush)
 [![Supported TYPO3](https://img.shields.io/badge/TYPO3-13.4%20%7C%2014.3-orange.svg)](https://get.typo3.org/)
-[![Supported PHP](https://img.shields.io/badge/PHP-8.2%20%7C%208.3%20%7C%208.4-blue.svg)](https://www.php.net/)
+[![Supported PHP](https://img.shields.io/badge/PHP-8.2%20%7C%208.3%20%7C%208.4%20%7C%208.5-blue.svg)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-GPL--2.0-blue.svg)](LICENSE)
 
 Push editorial changes into Solr **the moment a record is saved**, instead of waiting for the next index-queue scheduler run.
@@ -20,7 +20,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 - TYPO3 13.4 LTS or 14.3+
 - `apache-solr-for-typo3/solr` ^13.0 || ^14.0 in `monitoringType = 0` (the default)
-- PHP 8.2, 8.3 or 8.4
+- PHP 8.2, 8.3, 8.4 or 8.5
 
 > [!NOTE]
 > On TYPO3 14, `apache-solr-for-typo3/solr` is currently available only as a pre-release (`^14.0@beta`). Allow beta stability in your project ([`composer config minimum-stability beta && composer config prefer-stable true`](https://getcomposer.org/doc/04-schema.md#minimum-stability)) before requiring this extension there.
