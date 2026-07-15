@@ -7,13 +7,21 @@ namespace Wazum\SolrEagerFlush\Site;
 use ApacheSolrForTypo3\Solr\ConnectionManager;
 use Throwable;
 
-final readonly class ConnectionManagerSolrReachability implements SolrReachability
+final class ConnectionManagerSolrReachability implements SolrReachability
 {
+    /** @var array<int, bool> */
+    private array $reachableByRoot = [];
+
     public function __construct(
-        private ConnectionManager $connectionManager,
+        private readonly ConnectionManager $connectionManager,
     ) {}
 
     public function isReachable(int $rootPageId): bool
+    {
+        return $this->reachableByRoot[$rootPageId] ??= $this->ping($rootPageId);
+    }
+
+    private function ping(int $rootPageId): bool
     {
         try {
             return $this->connectionManager

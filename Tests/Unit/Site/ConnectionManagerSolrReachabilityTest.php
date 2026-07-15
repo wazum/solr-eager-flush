@@ -42,6 +42,24 @@ final class ConnectionManagerSolrReachabilityTest extends TestCase
         self::assertFalse($reachability->isReachable(1));
     }
 
+    #[Test]
+    public function pingsOnlyOncePerRootWithinTheRequest(): void
+    {
+        $writeService = $this->createMock(SolrWriteService::class);
+        $writeService->expects(self::once())->method('ping')->willReturn(true);
+
+        $connection = $this->createMock(SolrConnection::class);
+        $connection->method('getWriteService')->willReturn($writeService);
+
+        $connectionManager = $this->createMock(ConnectionManager::class);
+        $connectionManager->method('getConnectionByRootPageId')->willReturn($connection);
+
+        $reachability = new ConnectionManagerSolrReachability($connectionManager);
+
+        self::assertTrue($reachability->isReachable(1));
+        self::assertTrue($reachability->isReachable(1), 'The ping result is cached and reused within the request');
+    }
+
     private function connectionManagerPinging(bool $answers): ConnectionManager
     {
         $writeService = $this->createMock(SolrWriteService::class);
