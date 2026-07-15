@@ -12,7 +12,7 @@
 
 Push editorial changes into Solr **the moment a record is saved**, instead of waiting for the next index-queue scheduler run.
 
-With `apache-solr-for-typo3/solr` in its default [`monitoringType = 0` (Immediate)](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Configuration/Reference/ExtensionSettings.html) mode, saving a record only *enqueues* it in `tx_solr_indexqueue_item`; the document reaches Solr later, when the [**Index Queue Worker**](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Backend/IndexQueue.html) scheduler task next runs. This extension closes that gap: it indexes the freshly queued items at the end of the save request — on PHP-FPM and LiteSpeed *after* the response has been sent to the editor, so the save itself stays fast. Built-in gates back off under queue pressure or while the scheduler is already working, so the eager flush stays out of the way when it would cost too much.
+With `apache-solr-for-typo3/solr` in its default [`monitoringType = 0` (Immediate)](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Configuration/Reference/ExtensionSettings.html) mode, saving a record only *enqueues* it in `tx_solr_indexqueue_item`; the document reaches Solr later, when the [**Index Queue Worker**](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Backend/IndexQueue.html) scheduler task next runs. This extension closes that gap: it indexes the freshly queued items at the end of the save request — on PHP-FPM *after* the response has been sent to the editor, so the save itself stays fast. Built-in gates back off under queue pressure or while the scheduler is already working, so the eager flush stays out of the way when it would cost too much.
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
@@ -39,7 +39,7 @@ After a record is saved, ext:solr updates its index queue and fires a [`Processi
 
 The flush runs at the end of the same, already-booted request — but whether the editor waits for it depends on the server API:
 
-- **PHP-FPM and LiteSpeed** — the response is released to the editor first ([`fastcgi_finish_request()`](https://www.php.net/manual/en/function.fastcgi-finish-request.php), or its LiteSpeed equivalent [`litespeed_finish_request()`](https://www.litespeedtech.com/open-source/litespeed-sapi/lsapi-release-log)), so the save returns immediately and indexing happens afterwards, with no waiting. This is the case the extension is built for, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM).
+- **PHP-FPM** — the response is released to the editor first ([`fastcgi_finish_request()`](https://www.php.net/manual/en/function.fastcgi-finish-request.php)), so the save returns immediately and indexing happens afterwards, with no waiting. This is the case the extension is built for, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM).
 - **Other per-request SAPIs** (Apache `mod_php`, CGI) — the flush still runs at the end of the request, but the connection can't be released early, so the editor waits for it much as they would for inline indexing.
 
 > [!NOTE]
