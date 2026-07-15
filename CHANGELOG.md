@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-15
+
+### Fixed
+- Records responsible for several site roots — for example through ext:solr's `additionalPageIds` — are now fully eager-flushed. Previously only the root the save originated from was flushed and the record's other roots waited for the scheduler. Root resolution now delegates to ext:solr's `RootPageResolver`, so every responsible root is scheduled and deduplicated.
+- The configured `typeFilter` is now applied when resolving the affected site roots, not only when selecting items. Saving an excluded item type (for example a page in the default `records` mode) no longer triggers a Solr reachability ping and a misleading "completed" log for a flush that indexes nothing.
+- An index-queue query failure is now surfaced instead of being swallowed and reported as an empty, successful flush.
+- `ignore_user_abort()` is now enabled before the response is detached, and restored when detachment is not possible, so a client disconnect around the detachment can no longer terminate the eager flush.
+
+### Changed
+- The site policy now fails closed when a site cannot be resolved or read: the eager flush is skipped and the work is left to the scheduler, instead of proceeding against a broken site configuration.
+- The Solr reachability ping is cached per site root for the duration of the request, so one request pings each connection at most once.
+- `indexQueueLimit` and `deltaMax` are now clamped to a maximum of 100, so a configuration typo cannot turn a single shutdown callback into an effectively unbounded indexing job.
+- Eligible index-queue items are now selected in a single query instead of one lookup per item.
+- Internal: the `SiteRootResolver` interface now returns every responsible root — `resolveRootPageId(): ?int` became `resolveRootPageIds(): array`.
+
+### Added
+- PHP 8.5 support, covered by the test matrix on TYPO3 13.4 and 14.3.
+
+### Compatibility
+- TYPO3 13.4 LTS and 14.3+, PHP 8.2–8.5. On TYPO3 14, `apache-solr-for-typo3/solr` is currently a pre-release.
+
 ## [1.3.0] - 2026-06-16
 
 ### Fixed
@@ -43,7 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Compatibility
 - TYPO3 13.4 LTS and 14.3+, PHP 8.2–8.4. On TYPO3 14, `apache-solr-for-typo3/solr` is currently a pre-release.
 
-[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.4.0...HEAD
+[1.4.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.4.0
 [1.3.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.3.0
 [1.2.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.2.0
 [1.1.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.1.0
