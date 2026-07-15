@@ -57,13 +57,13 @@ Before indexing, two gates can tell the flush to stand down and leave the work t
 
 ### What gets indexed
 
-The flush is scoped to the saved record's site — a single save never fans out to other sites. The site is skipped when:
+The flush is scoped to the roots responsible for the saved record — usually one, but a record shared across sites (for example through ext:solr's `additionalPageIds`) flushes every root it belongs to, exactly as the index queue records them. A root is skipped when:
 
 - it can't be resolved (the items are left to the scheduler),
 - eager flush is disabled for it, or
 - its Solr doesn't answer a quick ping.
 
-Otherwise the site's queued items are indexed right away, up to `deltaMax` and limited to the configured `typeFilter`. Any failure is logged and never breaks the save.
+Otherwise each root's queued items are indexed right away, up to `deltaMax` and limited to the configured `typeFilter`. Any failure is logged and never breaks the save.
 
 > [!TIP]
 > Configure a short Solr connection timeout. A Solr that *refuses* the connection fails instantly, but an *unreachable* host could otherwise stall the ping.

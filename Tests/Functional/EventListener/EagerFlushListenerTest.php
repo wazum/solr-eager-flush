@@ -24,7 +24,7 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         $scheduledRoots = [];
         $listener = $this->buildListener(
             scheduledRoots: $scheduledRoots,
-            rootResolver: $this->resolverReturning(42),
+            rootResolver: $this->resolverReturning([42]),
         );
 
         $listener->__invoke($this->makeFinishedEvent());
@@ -33,12 +33,26 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
     }
 
     #[Test]
+    public function schedulesEveryResponsibleRootForMultiRootRecords(): void
+    {
+        $scheduledRoots = [];
+        $listener = $this->buildListener(
+            scheduledRoots: $scheduledRoots,
+            rootResolver: $this->resolverReturning([42, 43]),
+        );
+
+        $listener->__invoke($this->makeFinishedEvent());
+
+        self::assertSame([42, 43], $scheduledRoots, 'A record responsible for several roots must schedule all of them');
+    }
+
+    #[Test]
     public function defersToSchedulerTaskWhenSiteCannotBeResolved(): void
     {
         $scheduledRoots = [];
         $listener = $this->buildListener(
             scheduledRoots: $scheduledRoots,
-            rootResolver: $this->resolverReturning(null),
+            rootResolver: $this->resolverReturning([]),
         );
 
         $listener->__invoke($this->makeFinishedEvent());
@@ -53,7 +67,7 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         $listener = $this->buildListener(
             scheduledRoots: $scheduledRoots,
             rootResolver: new class implements SiteRootResolver {
-                public function resolveRootPageId(DataUpdateEventInterface $event): ?int
+                public function resolveRootPageIds(DataUpdateEventInterface $event): array
                 {
                     throw new RuntimeException('resolver boom');
                 }
@@ -90,14 +104,20 @@ final class EagerFlushListenerTest extends AbstractFunctionalTestCase
         );
     }
 
-    private function resolverReturning(?int $root): SiteRootResolver
+    /**
+     * @param list<int> $roots
+     */
+    private function resolverReturning(array $roots): SiteRootResolver
     {
-        return new class($root) implements SiteRootResolver {
-            public function __construct(private readonly ?int $root) {}
+        return new class($roots) implements SiteRootResolver {
+            /**
+             * @param list<int> $roots
+             */
+            public function __construct(private readonly array $roots) {}
 
-            public function resolveRootPageId(DataUpdateEventInterface $event): ?int
+            public function resolveRootPageIds(DataUpdateEventInterface $event): array
             {
-                return $this->root;
+                return $this->roots;
             }
         };
     }

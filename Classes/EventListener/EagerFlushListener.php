@@ -21,14 +21,16 @@ final readonly class EagerFlushListener
     public function __invoke(ProcessingFinishedEvent $event): void
     {
         try {
-            $rootPageId = $this->rootResolver->resolveRootPageId($event->getDataUpdateEvent());
-            if (null === $rootPageId) {
+            $rootPageIds = $this->rootResolver->resolveRootPageIds($event->getDataUpdateEvent());
+            if ([] === $rootPageIds) {
                 $this->logger->debug('eager-flush skipped', ['reason' => 'site-unresolved']);
 
                 return;
             }
 
-            $this->scheduler->schedule($rootPageId);
+            foreach ($rootPageIds as $rootPageId) {
+                $this->scheduler->schedule($rootPageId);
+            }
         } catch (Throwable $e) {
             $this->logger->error('eager-flush failed', ['exception' => $e]);
         }
