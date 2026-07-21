@@ -23,7 +23,9 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 - PHP 8.2, 8.3, 8.4 or 8.5
 
 > [!NOTE]
-> On TYPO3 14, `apache-solr-for-typo3/solr` is currently available only as a pre-release (`^14.0@beta`). Allow beta stability in your project ([`composer config minimum-stability beta && composer config prefer-stable true`](https://getcomposer.org/doc/04-schema.md#minimum-stability)) before requiring this extension there.
+> On TYPO3 14, `apache-solr-for-typo3/solr` is currently available as a release candidate (`14.0.0-RC1`). Allow RC stability in your project ([`composer config minimum-stability rc && composer config prefer-stable true`](https://getcomposer.org/doc/04-schema.md#minimum-stability)) before requiring this extension there. Note that ext:solr 14 requires Apache Solr 10.
+>
+> This extension is verified against ext:solr `14.0.0-RC1`: the full test suite passes and every ext:solr API it touches is unchanged. ext:solr 14 reworks *how* queue items are indexed (in-process frontend sub-requests instead of HTTP round-trips to the site), but the `IndexService`/`Queue` entry points this extension builds on are untouched.
 
 ## Installation
 
@@ -74,7 +76,7 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 
 | Setting | Default | Description |
 |---|---|---|
-| `typeFilter` | `records` | Which item types to eager-flush: `records`, `pages`, or `both`. Defaults to `records` because ext:solr indexes a page by rendering it, which is comparatively heavy. With the response released early the editor no longer waits for it, but the PHP process does — set `pages` or `both` to opt in. |
+| `typeFilter` | `records` | Which item types to eager-flush: `records`, `pages`, or `both`. Defaults to `records` because ext:solr indexes a page by rendering it (on ext:solr 13 via an HTTP request back to the site, on ext:solr 14 via an in-process frontend sub-request per language and access group), which is comparatively heavy. With the response released early the editor no longer waits for it, but the PHP process does — set `pages` or `both` to opt in. |
 | `indexQueueLimit` | `5` | Skip the eager flush when more than this many pending index-queue items already exist. Clamped to `100`. |
 | `deltaMax` | `10` | Maximum index-queue items to index per invocation, per affected site root. Clamped to `100` to keep a single request's synchronous flush bounded. |
 

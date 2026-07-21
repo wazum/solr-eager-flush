@@ -73,9 +73,9 @@ jobs:
           - { php: '8.3', typo3: '^13.4', stability: stable }
           - { php: '8.4', typo3: '^13.4', stability: stable }
           - { php: '8.5', typo3: '^13.4', stability: stable }
-          - { php: '8.3', typo3: '^14.3', stability: beta }
-          - { php: '8.4', typo3: '^14.3', stability: beta }
-          - { php: '8.5', typo3: '^14.3', stability: beta }
+          - { php: '8.3', typo3: '^14.3', stability: rc }
+          - { php: '8.4', typo3: '^14.3', stability: rc }
+          - { php: '8.5', typo3: '^14.3', stability: rc }
     steps:
       - uses: actions/checkout@v4
 
@@ -97,8 +97,8 @@ jobs:
             composer-${{ runner.os }}-php${{ matrix.php }}-
 
       - name: Allow pre-release dependencies (ext:solr is pre-release on TYPO3 14)
-        if: matrix.stability == 'beta'
-        run: composer config minimum-stability beta
+        if: matrix.stability != 'stable'
+        run: composer config minimum-stability ${{ matrix.stability }}
 
       - name: Pin TYPO3 ${{ matrix.typo3 }}
         run: composer require --no-update "typo3/cms-core:${{ matrix.typo3 }}" "typo3/cms-scheduler:${{ matrix.typo3 }}"
