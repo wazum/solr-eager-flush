@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-07-21
+
+### Fixed
+- A typed class constant (PHP 8.3 syntax) slipped into 1.5.0 and broke installation on PHP 8.2, which the package still supports. The 1.5.0 tag on Packagist does not contain the failure-report improvements; use this release instead.
+
 ## [1.5.0] - 2026-07-21
 
 ### Changed
