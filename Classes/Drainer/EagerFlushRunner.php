@@ -55,7 +55,13 @@ class EagerFlushRunner
 
             $this->logger->warning('eager-flush completed with failures', $context + ['reasons' => $result->failureReasons]);
         } catch (Throwable $e) {
-            $this->logger->error('eager-flush failed', ['exception' => $e]);
+            $this->logger->error('eager-flush failed', [
+                'exception' => $e,
+                'exception_class' => $e::class,
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'location' => $e->getFile() . ':' . $e->getLine(),
+            ]);
         }
     }
 }

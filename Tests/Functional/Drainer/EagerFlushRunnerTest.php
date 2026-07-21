@@ -104,6 +104,29 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
         self::assertContains(LogLevel::ERROR, $logger->levels, 'A throwing drain must be logged, never escape the runner');
     }
 
+    #[Test]
+    public function logsScalarExceptionDetailsWhenTheDrainThrows(): void
+    {
+        $logger = new RecordingLogger();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {
+                throw new RuntimeException('drain boom', 1234);
+            },
+            logger: $logger,
+        );
+
+        $runner->run(1);
+
+        $errorIndex = array_search(LogLevel::ERROR, $logger->levels, true);
+        self::assertIsInt($errorIndex);
+        $errorContext = $logger->contexts[$errorIndex];
+        self::assertSame(RuntimeException::class, $errorContext['exception_class']);
+        self::assertSame('drain boom', $errorContext['exception_message']);
+        self::assertSame(1234, $errorContext['exception_code']);
+        self::assertStringContainsString('EagerFlushRunnerTest.php:', $errorContext['location']);
+    }
+
     /**
      * @param list<EagerFlushGate> $gates
      */

@@ -96,6 +96,58 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
     }
 
     #[Test]
+    public function enrichesTheFailureReasonWithTheErrorsOfItemsThatFailedDuringTheRun(): void
+    {
+        $this->insertPendingItem(root: 1, itemType: 'tx_fake_person');
+        $indexer = new class implements SiteIndexer {
+            public function index(int $rootPageId, int $limit): bool
+            {
+                GeneralUtility::makeInstance(ConnectionPool::class)
+                    ->getConnectionForTable('tx_solr_indexqueue_item')
+                    ->update(
+                        'tx_solr_indexqueue_item',
+                        ['errors' => "1734: RuntimeException: Could not fetch record\n#0 /app/vendor/stack-frame.php(12)"],
+                        ['root' => 1],
+                    );
+
+                return false;
+            }
+        };
+
+        $result = $this->buildDrainer($indexer)->drain(10);
+
+        self::assertSame([1], $result->failedRoots);
+        self::assertStringContainsString('tx_fake_person:1', $result->failureReasons[1]);
+        self::assertStringContainsString('RuntimeException: Could not fetch record', $result->failureReasons[1]);
+        self::assertStringNotContainsString('stack-frame', $result->failureReasons[1], 'Only the first line of the stored error is included');
+    }
+
+    #[Test]
+    public function capsTheFailureReasonAtThreeItemsAndNamesTheRemainderCount(): void
+    {
+        foreach (range(1, 5) as $itemUid) {
+            $this->insertPendingItem(root: 1, itemUid: $itemUid);
+        }
+        $indexer = new class implements SiteIndexer {
+            public function index(int $rootPageId, int $limit): bool
+            {
+                GeneralUtility::makeInstance(ConnectionPool::class)
+                    ->getConnectionForTable('tx_solr_indexqueue_item')
+                    ->update('tx_solr_indexqueue_item', ['errors' => 'RuntimeException: boom'], ['root' => 1]);
+
+                return false;
+            }
+        };
+
+        $result = $this->buildDrainer($indexer)->drain(10);
+
+        $reason = $result->failureReasons[1];
+        self::assertStringContainsString('(5 failed items)', $reason);
+        self::assertSame(3, substr_count($reason, 'RuntimeException: boom'), 'Only the first three items are listed');
+        self::assertStringContainsString('and 2 more', $reason);
+    }
+
+    #[Test]
     public function recordsFailureReasonForThrowingRoot(): void
     {
         $this->insertPendingItem(root: 1);
@@ -265,7 +317,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         return new RecordingSiteIndexer();
     }
 
-    private function insertPendingItem(int $root, string $itemType = 'pages'): void
+    private function insertPendingItem(int $root, string $itemType = 'pages', ?int $itemUid = null): void
     {
         $now = time();
         GeneralUtility::makeInstance(ConnectionPool::class)
@@ -273,7 +325,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
             ->insert('tx_solr_indexqueue_item', [
                 'root' => $root,
                 'item_type' => $itemType,
-                'item_uid' => $root,
+                'item_uid' => $itemUid ?? $root,
                 'indexing_configuration' => $itemType,
                 'changed' => $now,
                 'indexed' => 0,
