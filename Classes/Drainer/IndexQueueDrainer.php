@@ -13,6 +13,8 @@ use Wazum\SolrEagerFlush\Site\SolrReachability;
 
 class IndexQueueDrainer
 {
+    private const int FAILED_ITEMS_IN_REASON_MAX = 3;
+
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly PendingItemPredicate $predicate,
@@ -59,15 +61,92 @@ class IndexQueueDrainer
 
     private function indexRoot(int $rootPageId, int $deltaMax): ?string
     {
+        $pendingItemUids = $this->pendingItemUids($rootPageId);
+
         try {
             if ($this->siteIndexer->index($rootPageId, $deltaMax)) {
                 return null;
             }
 
-            return 'IndexService::indexItems() reported failure';
+            return $this->describeReportedFailure($pendingItemUids);
         } catch (Throwable $e) {
             return $e::class . ': ' . $e->getMessage();
         }
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function pendingItemUids(int $rootPageId): array
+    {
+        $queryBuilder = $this->connectionPool
+            ->getConnectionForTable('tx_solr_indexqueue_item')
+            ->createQueryBuilder();
+        $queryBuilder->getRestrictions()->removeAll();
+
+        $rows = $queryBuilder
+            ->select('uid')
+            ->from('tx_solr_indexqueue_item')
+            ->where(...$this->predicate->whereClauses($queryBuilder, time(), $this->configuration->typeFilter, $rootPageId))
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        return array_map(
+            static fn (array $row): int => (int) $row['uid'],
+            $rows,
+        );
+    }
+
+    /**
+     * @param list<int> $pendingItemUids
+     */
+    private function describeReportedFailure(array $pendingItemUids): string
+    {
+        $genericReason = 'IndexService::indexItems() reported failure';
+        if ([] === $pendingItemUids) {
+            return $genericReason;
+        }
+
+        $queryBuilder = $this->connectionPool
+            ->getConnectionForTable('tx_solr_indexqueue_item')
+            ->createQueryBuilder();
+        $queryBuilder->getRestrictions()->removeAll();
+
+        $failedItems = $queryBuilder
+            ->select('item_type', 'item_uid', 'errors')
+            ->from('tx_solr_indexqueue_item')
+            ->where(
+                $queryBuilder->expr()->in('uid', $queryBuilder->createNamedParameter($pendingItemUids, Connection::PARAM_INT_ARRAY)),
+                $queryBuilder->expr()->neq('errors', $queryBuilder->createNamedParameter('')),
+            )
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        if ([] === $failedItems) {
+            return $genericReason;
+        }
+
+        $descriptions = array_map(
+            static function (array $failedItem): string {
+                $firstErrorLine = trim(explode("\n", (string) $failedItem['errors'], 2)[0]);
+
+                return \sprintf('[%s:%d] "%s"', $failedItem['item_type'], $failedItem['item_uid'], $firstErrorLine);
+            },
+            \array_slice($failedItems, 0, self::FAILED_ITEMS_IN_REASON_MAX),
+        );
+
+        $remainderCount = \count($failedItems) - \count($descriptions);
+        if ($remainderCount > 0) {
+            $descriptions[] = \sprintf('and %d more', $remainderCount);
+        }
+
+        return \sprintf(
+            '%s (%d failed item%s): %s',
+            $genericReason,
+            \count($failedItems),
+            1 === \count($failedItems) ? '' : 's',
+            implode('; ', $descriptions),
+        );
     }
 
     /**
