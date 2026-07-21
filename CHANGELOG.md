@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-07-21
+
 ### Changed
 - A failed index run now names the items that failed during the run in the failure reason, including the first line of each item's stored indexing error (up to three items, with the remainder counted). Previously the log only said that `IndexService::indexItems()` reported a failure and the cause had to be dug out of `tx_solr_indexqueue_item.errors` by hand.
 - When the eager flush itself throws, the error log now carries the exception class, message, code and location as plain scalar context values, so log backends that serialize exception objects lossily still show the cause.
