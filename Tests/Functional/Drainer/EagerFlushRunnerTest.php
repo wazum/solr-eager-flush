@@ -10,6 +10,9 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use TYPO3\CMS\Core\Locking\Exception\LockAcquireWouldBlockException;
+use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 use Wazum\SolrEagerFlush\Configuration\ExtensionConfiguration;
 use Wazum\SolrEagerFlush\Drainer\DrainResult;
 use Wazum\SolrEagerFlush\Drainer\EagerFlushRunner;
@@ -21,6 +24,16 @@ use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
 
 final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
 {
+    #[Test]
+    public function isWiredWithEveryDependency(): void
+    {
+        self::assertInstanceOf(
+            EagerFlushRunner::class,
+            $this->get(EagerFlushRunner::class),
+            'A dependency the container cannot autowire would disable the extension silently',
+        );
+    }
+
     #[Test]
     public function skipsWhenAGateBlocks(): void
     {
@@ -135,6 +148,63 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
     }
 
     #[Test]
+    public function skipsWhenAnotherFlushAlreadyHoldsTheSiteLock(): void
+    {
+        $drainerCalled = false;
+        $logger = new RecordingLogger();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function () use (&$drainerCalled): void {
+                $drainerCalled = true;
+            },
+            logger: $logger,
+            locker: $this->locker(contended: true),
+        );
+
+        $runner->run(7);
+
+        self::assertFalse($drainerCalled, 'Two processes must not index one site at the same time');
+        self::assertSame(['eager-flush skipped'], $logger->messages);
+        self::assertSame('already-flushing', $logger->contexts[0]['reason']);
+        self::assertSame(7, $logger->contexts[0]['root']);
+    }
+
+    #[Test]
+    public function releasesTheSiteLockAfterFlushing(): void
+    {
+        $locker = $this->locker();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {},
+            locker: $locker,
+        );
+
+        $runner->run(7);
+
+        self::assertTrue($locker->released, 'A held lock would block every later flush of the site');
+    }
+
+    #[Test]
+    public function releasesTheSiteLockWhenTheDrainThrows(): void
+    {
+        $locker = $this->locker();
+        $logger = new RecordingLogger();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {
+                throw new RuntimeException('drain boom');
+            },
+            logger: $logger,
+            locker: $locker,
+        );
+
+        $runner->run(7);
+
+        self::assertTrue($locker->released, 'A failing flush must not leave the site locked');
+        self::assertContains(LogLevel::ERROR, $logger->levels);
+    }
+
+    #[Test]
     public function logsWarningWhenDrainReportsFailures(): void
     {
         $logger = new RecordingLogger();
@@ -200,6 +270,7 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
         DrainResult $result = new DrainResult(),
         LoggerInterface $logger = new NullLogger(),
         bool $underPressureLimit = true,
+        ?LockingStrategyInterface $locker = null,
     ): EagerFlushRunner {
         return new EagerFlushRunner(
             gates: $gates,
@@ -230,7 +301,65 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
                 deltaMax: 10,
             ),
             logger: $logger,
+            lockFactory: new class($locker ?? $this->locker()) extends LockFactory {
+                public function __construct(private readonly LockingStrategyInterface $locker) {}
+
+                public function createLocker(string $id, int $capabilities = LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE): LockingStrategyInterface
+                {
+                    return $this->locker;
+                }
+            },
         );
+    }
+
+    /**
+     * @return LockingStrategyInterface&object{released: bool}
+     */
+    private function locker(bool $contended = false): LockingStrategyInterface
+    {
+        $locker = new class('solr-eager-flush-test') implements LockingStrategyInterface {
+            public bool $released = false;
+
+            public bool $contended = false;
+
+            public function __construct($subject) {}
+
+            public static function getCapabilities(): int
+            {
+                return self::LOCK_CAPABILITY_EXCLUSIVE | self::LOCK_CAPABILITY_NOBLOCK;
+            }
+
+            public static function getPriority(): int
+            {
+                return 0;
+            }
+
+            public function acquire($mode = self::LOCK_CAPABILITY_EXCLUSIVE): bool
+            {
+                if ($this->contended) {
+                    throw new LockAcquireWouldBlockException('held elsewhere', 1428700748);
+                }
+
+                return true;
+            }
+
+            public function release(): bool
+            {
+                $this->released = true;
+
+                return true;
+            }
+
+            public function destroy(): void {}
+
+            public function isAcquired(): bool
+            {
+                return !$this->contended;
+            }
+        };
+        $locker->contended = $contended;
+
+        return $locker;
     }
 
     private function gate(bool $proceed): EagerFlushGate

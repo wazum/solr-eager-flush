@@ -57,6 +57,7 @@ Before indexing, two gates can tell the flush to stand down and leave the work t
 
 - **Pressure gate** — skips when more than `indexQueueLimit` items are already pending, leaving bulk changes to the scheduler.
 - **Scheduler-activity gate** — skips while an Index Queue Worker task is running, to avoid competing with it.
+- **Per-site lock** — skips while another request is already flushing the same site. That flush selects the queue when it starts, so it usually carries the newly queued items along; anything queued after it started waits for the next save or the scheduler. Without the lock, simultaneous saves would index the same items twice and fire one Solr commit each, which can exhaust Solr's warming searchers and report failures for documents that were indexed fine.
 
 ### What gets indexed
 
@@ -84,6 +85,8 @@ Every record carries the affected `root`. A skip names its `reason`: `gate` (a s
 
 > [!TIP]
 > Configure a short Solr connection timeout. A Solr that *refuses* the connection fails instantly, but an *unreachable* host could otherwise stall the ping.
+>
+> Consider a request timeout as well. TYPO3 ships `$GLOBALS['TYPO3_CONF_VARS']['HTTP']['timeout'] = 0`, so a Solr that accepts the connection and then stops answering keeps the PHP process waiting indefinitely. After the response has been released, neither `max_execution_time` (which does not count time spent waiting on sockets) nor FPM's `request_terminate_timeout` (which by default no longer applies once `fastcgi_finish_request()` has run) puts an end to it, so such a Solr can tie up worker after worker.
 
 ## Configuration
 
