@@ -31,9 +31,9 @@ final readonly class SchedulerActivityGate implements EagerFlushGate
             $rows = $queryBuilder
                 ->select('*')
                 ->from('tx_scheduler_task')
+                // No `disable` filter: disabling a task leaves the run it started alive, and the scheduler's own check ignores the flag too.
                 ->where(
                     $queryBuilder->expr()->eq('deleted', 0),
-                    $queryBuilder->expr()->eq('disable', 0),
                     $queryBuilder->expr()->isNotNull('serialized_executions'),
                 )
                 ->executeQuery()

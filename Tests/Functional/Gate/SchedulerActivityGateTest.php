@@ -55,7 +55,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     }
 
     #[Test]
-    public function ignoresDisabledSolrTask(): void
+    public function skipsWhenADisabledWorkerTaskIsStillExecuting(): void
     {
         $this->insertSchedulerTask(
             taskClassName: IndexQueueWorkerTask::class,
@@ -63,7 +63,10 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
             disable: 1,
         );
 
-        self::assertTrue($this->resolveGate()->shouldProceed());
+        self::assertFalse(
+            $this->resolveGate()->shouldProceed(),
+            'Disabling a task does not stop the run it already started',
+        );
     }
 
     #[Test]
