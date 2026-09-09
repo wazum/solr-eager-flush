@@ -81,7 +81,7 @@ $GLOBALS['TYPO3_CONF_VARS']['LOG']['Wazum']['SolrEagerFlush']['writerConfigurati
 ];
 ```
 
-Every record carries the affected `root`. A skip names its `reason`: `gate` (a scheduler task is working), `queue-pressure` (with the `limit` it backed off from), `deferral-unsupported` (a CLI save), `no-pending-items` (nothing matched the `typeFilter`, or the items carry earlier indexing errors), or `sites-skipped` (with a `skipped` map of root to `policy-disabled`/`solr-unreachable`).
+Every record carries the affected `root`. A skip names its `reason`: `gate` (a scheduler task is working), `queue-pressure` (with the `limit` it backed off from), `deferral-unsupported` (a CLI save), `no-pending-items` (ext:solr queued nothing for the save, nothing matched the `typeFilter`, or the items carry errors from an earlier indexing attempt), or `sites-skipped` (with a `skipped` map of root to `policy-disabled`/`solr-unreachable`).
 
 > [!TIP]
 > Configure a short Solr connection timeout. A Solr that *refuses* the connection fails instantly, but an *unreachable* host could otherwise stall the ping.
@@ -102,7 +102,7 @@ Configure via the TYPO3 backend under **Settings → Extension Configuration →
 > `deltaMax` is automatically raised to at least `indexQueueLimit`. Otherwise the `deltaMax`-sized indexing window could be filled by items the `typeFilter` then discards, leaving allowed items unflushed until the next scheduler run.
 
 > [!NOTE]
-> Editing a content element (`tt_content`) enqueues its **containing page**, not a `tt_content` item. In the default `records` mode those page items are excluded, so ordinary content edits are not eager-flushed — set `typeFilter` to `pages` or `both` if you want content edits to reach Solr immediately.
+> In the default `records` mode nothing about a page reaches Solr eagerly. That covers editing the page itself, and editing a content element (`tt_content`), which enqueues its **containing page** rather than a `tt_content` item. Set `typeFilter` to `pages` or `both` if you want page and content edits to reach Solr immediately. Until then such a save logs `eager-flush skipped` with the reason `no-pending-items`, and the queued page waits for the Index Queue Worker.
 
 > [!NOTE]
 > "Immediate" means the document reaches Solr at the end of the save request. Whether it becomes *searchable* right away still depends on your ext:solr/Solr commit configuration (hard commit vs. auto/soft commit). With commits disabled the document is indexed but stays invisible until Solr next commits; hard-committing on every editorial save, on the other hand, is expensive.
