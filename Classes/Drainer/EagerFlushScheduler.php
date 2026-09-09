@@ -49,7 +49,13 @@ class EagerFlushScheduler
             return;
         }
 
-        $this->responseDetacher->detach();
+        if (!$this->responseDetacher->detach()) {
+            // Otherwise the only symptom is a slow save, with nothing pointing at the flush.
+            $this->logger->notice('eager-flush: response not detached, the client waits for the flush', [
+                'sapi' => \PHP_SAPI,
+                'roots' => $rootPageIds,
+            ]);
+        }
 
         foreach ($rootPageIds as $rootPageId) {
             $this->runner->run($rootPageId);

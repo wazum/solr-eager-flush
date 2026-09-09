@@ -23,8 +23,7 @@ final readonly class SiteConfigEagerFlushPolicy implements SiteEagerFlushPolicy
         try {
             $configuration = $this->siteFinder->getSiteByRootPageId($rootPageId)->getConfiguration();
         } catch (SiteNotFoundException $e) {
-            // ext:solr queues items per site, so a queued root without one is a broken
-            // configuration rather than a site that opted out.
+            // ext:solr queues per site, so a queued root without one is broken, not opted out.
             $this->logger->warning('eager-flush: no site for the queued root, skipping it', [
                 'root' => $rootPageId,
                 'exception_class' => $e::class,

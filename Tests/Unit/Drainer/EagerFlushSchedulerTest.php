@@ -108,6 +108,34 @@ final class EagerFlushSchedulerTest extends TestCase
     }
 
     #[Test]
+    public function reportsThatTheEditorIsStillWaitingWhenTheResponseCannotBeDetached(): void
+    {
+        $runRoots = [];
+        $logRecords = [];
+        $deferredTask = null;
+        $scheduler = $this->buildScheduler(
+            deferralSupported: true,
+            runRoots: $runRoots,
+            onDefer: static function (callable $task) use (&$deferredTask): void {
+                $deferredTask = $task;
+            },
+            detached: false,
+            logRecords: $logRecords,
+        );
+
+        $scheduler->schedule(7);
+        self::assertIsCallable($deferredTask);
+        $deferredTask();
+
+        $records = $logRecords ?? [];
+
+        self::assertSame([7], $runRoots, 'The flush must still run, the editor just waits for it');
+        self::assertSame([LogLevel::NOTICE], array_column($records, 0));
+        self::assertSame('eager-flush: response not detached, the client waits for the flush', $records[0][1] ?? null);
+        self::assertSame(\PHP_SAPI, $records[0][2]['sapi'] ?? null);
+    }
+
+    #[Test]
     public function aSecondFlushDoesNotDrainTheSameRootsAgain(): void
     {
         $runRoots = [];
