@@ -8,6 +8,9 @@
     failOnRisky="true"
     failOnWarning="true"
 >
+    <php>
+        <ini name="memory_limit" value="512M"/>
+    </php>
     <testsuites>
         <testsuite name="unit">
             <directory>Unit</directory>
