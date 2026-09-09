@@ -15,7 +15,7 @@
 
 > "This is a truly brilliant feature; it's a huge help during testing and eliminates countless follow-up questions and misunderstandings in support for editorial teams who want to see their changes quickly and have little understanding of asynchronous update processes."
 >
-> — Wolfgang T., project manager at [*plan2net*](https://github.com/plan2net)
+> — Wolfgang T., project manager at [*plan2net GmbH*](https://github.com/plan2net), Vienna, Austria
 
 ## The idea
 
