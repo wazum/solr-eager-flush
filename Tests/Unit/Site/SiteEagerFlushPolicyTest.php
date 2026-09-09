@@ -47,15 +47,21 @@ final class SiteEagerFlushPolicyTest extends TestCase
     }
 
     #[Test]
-    public function disabledWhenSiteCannotBeResolved(): void
+    public function disabledAndLogsWhenSiteCannotBeResolved(): void
     {
         $siteFinder = $this->createMock(SiteFinder::class);
         $siteFinder->method('getSiteByRootPageId')->willThrowException(new SiteNotFoundException('no site', 1));
+        $logger = $this->recordingLogger();
 
-        self::assertFalse(
-            (new SiteConfigEagerFlushPolicy($siteFinder, new NullLogger()))->isEnabledForRoot(1),
-            'An unresolvable site must fail closed, leaving the work to the scheduler',
+        $policy = new SiteConfigEagerFlushPolicy($siteFinder, $logger);
+
+        self::assertFalse($policy->isEnabledForRoot(4), 'An unresolvable site must fail closed');
+        self::assertContains(
+            LogLevel::WARNING,
+            $logger->levels,
+            'A queued root without a site is a broken state, not a silent opt-out',
         );
+        self::assertSame(4, $logger->contexts[0]['root']);
     }
 
     #[Test]
@@ -77,6 +83,26 @@ final class SiteEagerFlushPolicyTest extends TestCase
 
         self::assertFalse($policy->isEnabledForRoot(1), 'An unreadable site configuration must fail closed');
         self::assertContains(LogLevel::WARNING, $logger->levels, 'An unexpected site lookup error must be logged');
+    }
+
+    /**
+     * @return AbstractLogger&object{levels: list<string>, contexts: list<array<string, mixed>>}
+     */
+    private function recordingLogger(): AbstractLogger
+    {
+        return new class extends AbstractLogger {
+            /** @var list<string> */
+            public array $levels = [];
+
+            /** @var list<array<string, mixed>> */
+            public array $contexts = [];
+
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->levels[] = (string) $level;
+                $this->contexts[] = $context;
+            }
+        };
     }
 
     /**

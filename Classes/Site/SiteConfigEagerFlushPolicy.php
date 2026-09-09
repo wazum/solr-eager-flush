@@ -22,10 +22,23 @@ final readonly class SiteConfigEagerFlushPolicy implements SiteEagerFlushPolicy
     {
         try {
             $configuration = $this->siteFinder->getSiteByRootPageId($rootPageId)->getConfiguration();
-        } catch (SiteNotFoundException) {
+        } catch (SiteNotFoundException $e) {
+            // ext:solr queues items per site, so a queued root without one is a broken
+            // configuration rather than a site that opted out.
+            $this->logger->warning('eager-flush: no site for the queued root, skipping it', [
+                'root' => $rootPageId,
+                'exception_class' => $e::class,
+                'exception_message' => $e->getMessage(),
+            ]);
+
             return false;
         } catch (Throwable $e) {
-            $this->logger->warning('eager-flush: failed to read site configuration', ['exception' => $e]);
+            $this->logger->warning('eager-flush: failed to read site configuration', [
+                'root' => $rootPageId,
+                'exception' => $e,
+                'exception_class' => $e::class,
+                'exception_message' => $e->getMessage(),
+            ]);
 
             return false;
         }
