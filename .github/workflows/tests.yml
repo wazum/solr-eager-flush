@@ -8,6 +8,8 @@ on:
       - 'fix/**'
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
 
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
@@ -101,6 +103,39 @@ jobs:
 
       - name: Install dependencies
         run: composer update --no-interaction --no-progress --prefer-dist
+
+      - name: Unit tests
+        run: composer test:unit
+
+      - name: Functional tests
+        run: composer test:functional
+
+  lowest:
+    name: Lowest supported dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, json, dom, simplexml, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-lowest-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-lowest-${{ runner.os }}-
+
+      - name: Install the lowest allowed dependencies
+        run: composer update --no-interaction --no-progress --prefer-dist --prefer-lowest --prefer-stable
+
+      - name: Versions under test
+        run: composer show --direct
 
       - name: Unit tests
         run: composer test:unit
