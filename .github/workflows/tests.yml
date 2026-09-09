@@ -69,13 +69,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { php: '8.2', typo3: '^13.4', stability: stable }
-          - { php: '8.3', typo3: '^13.4', stability: stable }
-          - { php: '8.4', typo3: '^13.4', stability: stable }
-          - { php: '8.5', typo3: '^13.4', stability: stable }
-          - { php: '8.3', typo3: '^14.3', stability: rc }
-          - { php: '8.4', typo3: '^14.3', stability: rc }
-          - { php: '8.5', typo3: '^14.3', stability: rc }
+          - { php: '8.2', typo3: '^13.4' }
+          - { php: '8.3', typo3: '^13.4' }
+          - { php: '8.4', typo3: '^13.4' }
+          - { php: '8.5', typo3: '^13.4' }
+          - { php: '8.3', typo3: '^14.3' }
+          - { php: '8.4', typo3: '^14.3' }
+          - { php: '8.5', typo3: '^14.3' }
     steps:
       - uses: actions/checkout@v4
 
@@ -95,10 +95,6 @@ jobs:
           restore-keys: |
             composer-${{ runner.os }}-php${{ matrix.php }}-typo3${{ matrix.typo3 }}-
             composer-${{ runner.os }}-php${{ matrix.php }}-
-
-      - name: Allow pre-release dependencies (ext:solr is pre-release on TYPO3 14)
-        if: matrix.stability != 'stable'
-        run: composer config minimum-stability ${{ matrix.stability }}
 
       - name: Pin TYPO3 ${{ matrix.typo3 }}
         run: composer require --no-update "typo3/cms-core:${{ matrix.typo3 }}" "typo3/cms-scheduler:${{ matrix.typo3 }}"

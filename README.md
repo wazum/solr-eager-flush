@@ -23,9 +23,9 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 - PHP 8.2, 8.3, 8.4 or 8.5
 
 > [!NOTE]
-> On TYPO3 14, `apache-solr-for-typo3/solr` is currently available as a release candidate (`14.0.0-RC1`). Allow RC stability in your project ([`composer config minimum-stability rc && composer config prefer-stable true`](https://getcomposer.org/doc/04-schema.md#minimum-stability)) before requiring this extension there. Note that ext:solr 14 requires Apache Solr 10.
+> ext:solr 14 requires [Apache Solr 10](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html), and TYPO3 14.3 or newer. Nothing else is needed to install this extension there.
 >
-> This extension is verified against ext:solr `14.0.0-RC1`: the full test suite passes and every ext:solr API it touches is unchanged. ext:solr 14 reworks *how* queue items are indexed (in-process frontend sub-requests instead of HTTP round-trips to the site), but the `IndexService`/`Queue` entry points this extension builds on are untouched.
+> The test matrix covers ext:solr 13 and 14, and every ext:solr API this extension builds on is the same in both. ext:solr 14 reworks *how* queue items are indexed (an in-process frontend sub-request per item instead of an HTTP round-trip to the site), but the `IndexService`/`Queue` entry points are untouched.
 
 ## Installation
 
