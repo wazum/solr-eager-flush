@@ -27,14 +27,22 @@ class EagerFlushRunner
         try {
             foreach ($this->gates as $gate) {
                 if (!$gate->shouldProceed()) {
-                    $this->logger->debug('eager-flush skipped', ['gate' => $gate::class]);
+                    $this->logger->info('eager-flush skipped', [
+                        'reason' => 'gate',
+                        'gate' => $gate::class,
+                        'root' => $rootPageId,
+                    ]);
 
                     return;
                 }
             }
 
             if (!$this->pressure->isUnderLimit($rootPageId)) {
-                $this->logger->debug('eager-flush skipped', ['reason' => 'queue-pressure', 'root' => $rootPageId]);
+                $this->logger->info('eager-flush skipped', [
+                    'reason' => 'queue-pressure',
+                    'root' => $rootPageId,
+                    'limit' => $this->configuration->indexQueueLimit,
+                ]);
 
                 return;
             }
@@ -42,20 +50,35 @@ class EagerFlushRunner
             $start = microtime(true);
             $result = $this->drainer->drain($this->configuration->deltaMax, $rootPageId);
             $context = [
+                'root' => $rootPageId,
                 'duration_ms' => (int) round((microtime(true) - $start) * 1000.0),
                 'succeeded' => $result->succeededRoots,
                 'failed' => $result->failedRoots,
             ];
 
-            if (!$result->hasFailures()) {
-                $this->logger->info('eager-flush completed', $context);
+            if ($result->hasFailures()) {
+                $this->logger->warning('eager-flush completed with failures', $context + [
+                    'reasons' => $result->failureReasons,
+                    'skipped' => $result->skippedRoots,
+                ]);
 
                 return;
             }
 
-            $this->logger->warning('eager-flush completed with failures', $context + ['reasons' => $result->failureReasons]);
+            // Whoever reads the log must tell an empty queue from a site that was skipped.
+            if ([] === $result->succeededRoots) {
+                $this->logger->info('eager-flush skipped', $context + [
+                    'reason' => [] === $result->skippedRoots ? 'no-pending-items' : 'sites-skipped',
+                    'skipped' => $result->skippedRoots,
+                ]);
+
+                return;
+            }
+
+            $this->logger->info('eager-flush completed', $context);
         } catch (Throwable $e) {
             $this->logger->error('eager-flush failed', [
+                'root' => $rootPageId,
                 'exception' => $e,
                 'exception_class' => $e::class,
                 'exception_message' => $e->getMessage(),

@@ -68,6 +68,20 @@ The flush is scoped to the roots responsible for the saved record — usually on
 
 Otherwise each root's queued items are indexed right away, up to `deltaMax` and limited to the configured `typeFilter`. Any failure is logged and never breaks the save.
 
+### Following what the flush decided
+
+Failures are logged as warnings or errors, so TYPO3's default log configuration shows them. Everything the flush *decided* — which root it indexed, and why it stood down — is logged at info level, below that default. To see it while working out why a save did not reach Solr, lower the threshold for this extension's channel in `config/system/additional.php`:
+
+```php
+$GLOBALS['TYPO3_CONF_VARS']['LOG']['Wazum']['SolrEagerFlush']['writerConfiguration'] = [
+    \TYPO3\CMS\Core\Log\LogLevel::INFO => [
+        \TYPO3\CMS\Core\Log\Writer\FileWriter::class => ['logFileInfix' => 'solr_eager_flush'],
+    ],
+];
+```
+
+Every record carries the affected `root`. A skip names its `reason`: `gate` (a scheduler task is working), `queue-pressure` (with the `limit` it backed off from), `deferral-unsupported` (a CLI save), `no-pending-items` (nothing matched the `typeFilter`, or the items carry earlier indexing errors), or `sites-skipped` (with a `skipped` map of root to `policy-disabled`/`solr-unreachable`).
+
 > [!TIP]
 > Configure a short Solr connection timeout. A Solr that *refuses* the connection fails instantly, but an *unreachable* host could otherwise stall the ping.
 

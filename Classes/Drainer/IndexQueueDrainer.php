@@ -34,9 +34,12 @@ class IndexQueueDrainer
         $succeeded = [];
         $failed = [];
         $failureReasons = [];
+        $skipped = [];
 
         foreach ($rootPageIds as $rootPageId) {
-            if (!$this->isFlushableSite($rootPageId)) {
+            $skipReason = $this->skipReason($rootPageId);
+            if (null !== $skipReason) {
+                $skipped[$rootPageId] = $skipReason;
                 continue;
             }
 
@@ -50,13 +53,20 @@ class IndexQueueDrainer
             $failureReasons[$rootPageId] = $failureReason;
         }
 
-        return new DrainResult($succeeded, $failed, $failureReasons);
+        return new DrainResult($succeeded, $failed, $failureReasons, $skipped);
     }
 
-    private function isFlushableSite(int $rootPageId): bool
+    private function skipReason(int $rootPageId): ?string
     {
-        return $this->siteEagerFlushPolicy->isEnabledForRoot($rootPageId)
-            && $this->solrReachability->isReachable($rootPageId);
+        if (!$this->siteEagerFlushPolicy->isEnabledForRoot($rootPageId)) {
+            return 'policy-disabled';
+        }
+
+        if (!$this->solrReachability->isReachable($rootPageId)) {
+            return 'solr-unreachable';
+        }
+
+        return null;
     }
 
     private function indexRoot(int $rootPageId, int $deltaMax): ?string

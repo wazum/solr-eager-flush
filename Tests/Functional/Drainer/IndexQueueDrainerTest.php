@@ -254,6 +254,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([1], $indexer->attempted, 'Root 2 (eager flush disabled for its site) is not indexed');
         self::assertSame([1], $result->succeededRoots);
         self::assertSame([], $result->failedRoots, 'A disabled site is skipped, not counted as a failure');
+        self::assertSame([2 => 'policy-disabled'], $result->skippedRoots, 'The skipped root and its reason must be reported');
     }
 
     #[Test]
@@ -274,6 +275,7 @@ final class IndexQueueDrainerTest extends AbstractFunctionalTestCase
         self::assertSame([1], $indexer->attempted, 'Root 2 (Solr unreachable) is not indexed');
         self::assertSame([1], $result->succeededRoots);
         self::assertSame([], $result->failedRoots, 'An unreachable Solr is skipped, not counted as a failure');
+        self::assertSame([2 => 'solr-unreachable'], $result->skippedRoots, 'The skipped root and its reason must be reported');
     }
 
     private function buildDrainer(

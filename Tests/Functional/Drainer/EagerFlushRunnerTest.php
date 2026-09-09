@@ -25,16 +25,21 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
     public function skipsWhenAGateBlocks(): void
     {
         $drainerCalled = false;
+        $logger = new RecordingLogger();
         $runner = $this->buildRunner(
             gates: [$this->gate(false), $this->gate(true)],
             onDrain: static function () use (&$drainerCalled): void {
                 $drainerCalled = true;
             },
+            logger: $logger,
         );
 
         $runner->run(1);
 
         self::assertFalse($drainerCalled, 'Drainer must not run when a gate blocks');
+        self::assertSame(['eager-flush skipped'], $logger->messages);
+        self::assertSame('gate', $logger->contexts[0]['reason']);
+        self::assertSame(1, $logger->contexts[0]['root']);
     }
 
     #[Test]
@@ -57,17 +62,76 @@ final class EagerFlushRunnerTest extends AbstractFunctionalTestCase
     public function skipsWhenQueuePressureIsTooHigh(): void
     {
         $drainerCalled = false;
+        $logger = new RecordingLogger();
         $runner = $this->buildRunner(
             gates: [$this->gate(true)],
             onDrain: static function () use (&$drainerCalled): void {
                 $drainerCalled = true;
             },
+            logger: $logger,
             underPressureLimit: false,
         );
 
         $runner->run(1);
 
         self::assertFalse($drainerCalled, 'Drainer must not run when the site is over the pressure limit');
+        self::assertSame(['eager-flush skipped'], $logger->messages);
+        self::assertSame('queue-pressure', $logger->contexts[0]['reason']);
+        self::assertSame(5, $logger->contexts[0]['limit'], 'The limit the flush backed off from must be visible');
+    }
+
+    #[Test]
+    public function reportsASkipInsteadOfCompletionWhenNothingWasIndexed(): void
+    {
+        $logger = new RecordingLogger();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {},
+            logger: $logger,
+        );
+
+        $runner->run(7);
+
+        self::assertSame(['eager-flush skipped'], $logger->messages, 'A drain that indexed nothing must not read as completed');
+        self::assertSame([LogLevel::INFO], $logger->levels);
+        self::assertSame('no-pending-items', $logger->contexts[0]['reason']);
+        self::assertSame(7, $logger->contexts[0]['root']);
+    }
+
+    #[Test]
+    public function namesTheSkippedSitesWhenNoRootCouldBeFlushed(): void
+    {
+        $logger = new RecordingLogger();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {},
+            result: new DrainResult(skippedRoots: [7 => 'solr-unreachable']),
+            logger: $logger,
+        );
+
+        $runner->run(7);
+
+        self::assertSame(['eager-flush skipped'], $logger->messages);
+        self::assertSame('sites-skipped', $logger->contexts[0]['reason']);
+        self::assertSame([7 => 'solr-unreachable'], $logger->contexts[0]['skipped']);
+    }
+
+    #[Test]
+    public function reportsCompletionOnlyWhenARootWasIndexed(): void
+    {
+        $logger = new RecordingLogger();
+        $runner = $this->buildRunner(
+            gates: [$this->gate(true)],
+            onDrain: static function (): void {},
+            result: new DrainResult(succeededRoots: [7]),
+            logger: $logger,
+        );
+
+        $runner->run(7);
+
+        self::assertSame(['eager-flush completed'], $logger->messages);
+        self::assertSame([LogLevel::INFO], $logger->levels);
+        self::assertSame([7], $logger->contexts[0]['succeeded']);
     }
 
     #[Test]

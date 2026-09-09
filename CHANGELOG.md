@@ -10,7 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A save that lands while its item is being indexed is no longer swallowed. `indexed` is only stamped while the item still carries the change time that was indexed, otherwise the item stays pending for the next run. Two saves within the same second remain indistinguishable.
 - The scheduler-activity gate now detects a running Index Queue Worker on TYPO3 14, where the task class is stored in `tasktype` instead of `serialized_task_object`.
 - The gate no longer stays shut after a crashed worker run: executions older than the scheduler's `maxLifetime` are ignored.
+- A flush that indexed nothing now logs `eager-flush skipped` with a `reason` instead of `eager-flush completed`. Per-site skips are reported as `policy-disabled` or `solr-unreachable`.
 - A Solr connection that cannot be resolved or does not answer the ping is logged as a warning naming the root, instead of being skipped silently.
+- Every flush log record names the site root, and a pressure skip names the limit. Gate and pressure skips moved from debug to info.
 
 ### Changed
 - Under the CLI the flush no longer runs inline; the items are left to the Index Queue Worker. `DataHandler` fires the triggering event before it writes MM relations, and ext:solr emits one event per record, so a bulk import ran a full index cycle per record.
