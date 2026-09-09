@@ -26,7 +26,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     {
         $this->insertSchedulerTask(
             taskClassName: IndexQueueWorkerTask::class,
-            serializedExecutions: serialize([99]),
+            serializedExecutions: serialize([time()]),
         );
 
         self::assertFalse($this->resolveGate()->shouldProceed());
@@ -37,7 +37,7 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     {
         $this->insertSchedulerTask(
             taskClassName: stdClass::class,
-            serializedExecutions: serialize([99]),
+            serializedExecutions: serialize([time()]),
         );
 
         self::assertTrue($this->resolveGate()->shouldProceed());
@@ -59,27 +59,90 @@ final class SchedulerActivityGateTest extends AbstractFunctionalTestCase
     {
         $this->insertSchedulerTask(
             taskClassName: IndexQueueWorkerTask::class,
-            serializedExecutions: serialize([99]),
+            serializedExecutions: serialize([time()]),
             disable: 1,
         );
 
         self::assertTrue($this->resolveGate()->shouldProceed());
     }
 
+    #[Test]
+    public function proceedsWhenTheWorkerExecutionOutlivedTheSchedulerMaxLifetime(): void
+    {
+        $this->insertSchedulerTask(
+            taskClassName: IndexQueueWorkerTask::class,
+            serializedExecutions: serialize([time() - 25 * 3600]),
+        );
+
+        self::assertTrue(
+            $this->resolveGate()->shouldProceed(),
+            'A crashed run must stop blocking the flush once the scheduler would drop its execution',
+        );
+    }
+
+    #[Test]
+    public function skipsWhenAStaleAndARunningExecutionAreRecordedTogether(): void
+    {
+        $this->insertSchedulerTask(
+            taskClassName: IndexQueueWorkerTask::class,
+            serializedExecutions: serialize([time() - 25 * 3600, time()]),
+        );
+
+        self::assertFalse($this->resolveGate()->shouldProceed());
+    }
+
+    #[Test]
+    public function skipsWhenTheTaskTypeColumnNamesTheWorker(): void
+    {
+        $this->skipWithoutTaskTypeColumn();
+
+        $this->insertSchedulerTask(
+            taskClassName: null,
+            serializedExecutions: serialize([time()]),
+            taskType: IndexQueueWorkerTask::class,
+        );
+
+        self::assertFalse(
+            $this->resolveGate()->shouldProceed(),
+            'TYPO3 14 records the task class in tasktype and leaves serialized_task_object empty',
+        );
+    }
+
     private function insertSchedulerTask(
-        string $taskClassName,
+        ?string $taskClassName,
         string $serializedExecutions,
         int $disable = 0,
         int $deleted = 0,
+        ?string $taskType = null,
     ): void {
+        $row = [
+            'disable' => $disable,
+            'deleted' => $deleted,
+            'serialized_task_object' => null === $taskClassName
+                ? ''
+                : \sprintf('O:%d:"%s":0:{}', \strlen($taskClassName), $taskClassName),
+            'serialized_executions' => $serializedExecutions,
+        ];
+        if (null !== $taskType) {
+            $row['tasktype'] = $taskType;
+        }
+
         GeneralUtility::makeInstance(ConnectionPool::class)
             ->getConnectionForTable('tx_scheduler_task')
-            ->insert('tx_scheduler_task', [
-                'disable' => $disable,
-                'deleted' => $deleted,
-                'serialized_task_object' => \sprintf('O:%d:"%s":0:{}', \strlen($taskClassName), $taskClassName),
-                'serialized_executions' => $serializedExecutions,
-            ]);
+            ->insert('tx_scheduler_task', $row);
+    }
+
+    private function skipWithoutTaskTypeColumn(): void
+    {
+        $hasTaskTypeColumn = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable('tx_scheduler_task')
+            ->createSchemaManager()
+            ->introspectTable('tx_scheduler_task')
+            ->hasColumn('tasktype');
+
+        if (!$hasTaskTypeColumn) {
+            self::markTestSkipped('tx_scheduler_task has no tasktype column before TYPO3 14');
+        }
     }
 
     private function resolveGate(): SchedulerActivityGate

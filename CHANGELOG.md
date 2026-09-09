@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- The scheduler-activity gate now detects a running Index Queue Worker on TYPO3 14, where the task class is stored in `tasktype` instead of `serialized_task_object`.
+- The gate no longer stays shut after a crashed worker run: executions older than the scheduler's `maxLifetime` are ignored.
 - A Solr connection that cannot be resolved or does not answer the ping is logged as a warning naming the root, instead of being skipped silently.
 
 ### Changed
