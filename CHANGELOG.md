@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Every flush log record names the site root, and a pressure skip names the limit. Gate and pressure skips moved from debug to info.
 
 ### Changed
+- The README is an overview again, with a diagram of where the indexing happens in a save request. The detail moved to `REFERENCE.md`.
 - `apache-solr-for-typo3/solr` 14 is released, so installing on TYPO3 14 no longer needs `minimum-stability: rc`.
 - Under the CLI the flush no longer runs inline; the items are left to the Index Queue Worker. `DataHandler` fires the triggering event before it writes MM relations, and ext:solr emits one event per record, so a bulk import ran a full index cycle per record.
 - The functional test suite no longer needs a raised `memory_limit`; it is set in the PHPUnit configuration.

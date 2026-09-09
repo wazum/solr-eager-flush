@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="880" height="736" viewBox="0 0 880 736" role="img" aria-labelledby="efs-tablet-title efs-tablet-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="efs-tablet-title">Where the indexing happens</title>
+<desc id="efs-tablet-desc">A record save enqueues an item in ext:solr's index queue and the response goes straight back to the editor. The same request then keeps running: unless a gate stands down, this extension reads the pending items, indexes them into Solr, and marks them indexed. If it does stand down, the items wait for the next Index Queue Worker run.</desc>
+
+<defs>
+    <marker id="efs-t-ink" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <polygon points="0 0, 10 4, 0 8" fill="#1A1E24"/>
+    </marker>
+    <marker id="efs-t-muted" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <polygon points="0 0, 10 4, 0 8" fill="#5B6570"/>
+    </marker>
+    <marker id="efs-t-accent" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <polygon points="0 0, 10 4, 0 8" fill="#ED6D05"/>
+    </marker>
+    <marker id="efs-t-open" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <polyline points="0 0, 10 4, 0 8" fill="none" stroke="#5B6570" stroke-width="1.2"/>
+    </marker>
+</defs>
+
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+
+<line x1="120" y1="112" x2="120" y2="664" stroke="rgba(26,30,36,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="328" y1="112" x2="328" y2="664" stroke="rgba(26,30,36,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="536" y1="112" x2="536" y2="664" stroke="rgba(26,30,36,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="744" y1="112" x2="744" y2="664" stroke="rgba(26,30,36,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+
+<rect x="296" y="320" width="480" height="272" rx="4" fill="rgba(26,30,36,0.02)" stroke="rgba(26,30,36,0.22)" stroke-width="1"/>
+<rect x="312" y="312" width="272" height="16" rx="2" fill="#FFFFFF"/>
+<text x="320" y="324" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" letter-spacing="0.10em">ONLY WHEN NO GATE STANDS DOWN</text>
+
+<line x1="120" y1="168" x2="320" y2="168" stroke="#1A1E24" stroke-width="2" marker-end="url(#efs-t-ink)"/>
+<rect x="156" y="148" width="128" height="12" rx="2" fill="#FFFFFF"/>
+<text x="220" y="158" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">SAVE RECORD</text>
+
+<line x1="328" y1="216" x2="528" y2="216" stroke="#1A1E24" stroke-width="2" marker-end="url(#efs-t-ink)"/>
+<rect x="372" y="196" width="112" height="12" rx="2" fill="#FFFFFF"/>
+<text x="428" y="206" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">ENQUEUED</text>
+
+<line x1="328" y1="264" x2="128" y2="264" stroke="#ED6D05" stroke-width="2" marker-end="url(#efs-t-accent)"/>
+<rect x="160" y="244" width="120" height="12" rx="2" fill="#FFFFFF"/>
+<text x="220" y="254" fill="#A05E00" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">RESPONSE</text>
+
+<line x1="16" y1="296" x2="864" y2="296" stroke="rgba(26,30,36,0.28)" stroke-width="1" stroke-dasharray="6,5"/>
+<rect x="336" y="272" width="192" height="16" rx="2" fill="#FFFFFF"/>
+<text x="432" y="284" fill="rgba(26,30,36,0.62)" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.10em">RESPONSE RELEASED</text>
+
+<text x="280" y="400" fill="#A05E00" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="end" letter-spacing="0.06em">solr_eager_flush,</text>
+<text x="280" y="420" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="end" letter-spacing="0.06em">same process</text>
+
+<line x1="332" y1="392" x2="528" y2="392" stroke="#1A1E24" stroke-width="2" marker-end="url(#efs-t-ink)"/>
+<rect x="368" y="372" width="128" height="12" rx="2" fill="#FFFFFF"/>
+<text x="432" y="382" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">READ PENDING</text>
+
+<line x1="536" y1="432" x2="340" y2="432" stroke="#5B6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#efs-t-muted)"/>
+<rect x="360" y="412" width="144" height="12" rx="2" fill="#FFFFFF"/>
+<text x="432" y="422" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">UP TO deltaMax</text>
+
+<line x1="332" y1="472" x2="736" y2="472" stroke="#1A1E24" stroke-width="2" marker-end="url(#efs-t-ink)"/>
+<rect x="576" y="452" width="128" height="12" rx="2" fill="#FFFFFF"/>
+<text x="640" y="462" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">INDEX, COMMIT</text>
+
+<line x1="744" y1="512" x2="340" y2="512" stroke="#5B6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#efs-t-muted)"/>
+<rect x="608" y="492" width="64" height="12" rx="2" fill="#FFFFFF"/>
+<text x="640" y="502" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">OK</text>
+
+<line x1="332" y1="552" x2="528" y2="552" stroke="#1A1E24" stroke-width="2" marker-end="url(#efs-t-ink)"/>
+<rect x="364" y="532" width="136" height="12" rx="2" fill="#FFFFFF"/>
+<text x="432" y="542" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">MARK INDEXED</text>
+
+<line x1="536" y1="640" x2="736" y2="640" stroke="#5B6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#efs-t-open)"/>
+<rect x="564" y="620" width="152" height="12" rx="2" fill="#FFFFFF"/>
+<text x="640" y="630" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle" letter-spacing="0.06em">NEXT WORKER RUN</text>
+
+<rect x="324" y="368" width="8" height="200" fill="rgba(255,135,0,0.10)" stroke="#ED6D05" stroke-width="1.2"/>
+
+<rect x="32" y="40" width="176" height="72" rx="6" fill="#FFFFFF"/>
+<rect x="32" y="40" width="176" height="72" rx="6" fill="rgba(91,101,112,0.10)" stroke="#5B6570" stroke-width="1"/>
+<text x="120" y="76" fill="#1A1E24" font-size="16" font-weight="600" font-family="'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" text-anchor="middle">Editor</text>
+<text x="120" y="96" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle">clicks Save</text>
+
+<rect x="240" y="40" width="176" height="72" rx="6" fill="#FFFFFF"/>
+<rect x="240" y="40" width="176" height="72" rx="6" fill="#FFFFFF" stroke="#1A1E24" stroke-width="1"/>
+<text x="328" y="76" fill="#1A1E24" font-size="16" font-weight="600" font-family="'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" text-anchor="middle">The save request</text>
+<text x="328" y="96" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle">one process</text>
+
+<rect x="448" y="40" width="176" height="72" rx="6" fill="#FFFFFF"/>
+<rect x="448" y="40" width="176" height="72" rx="6" fill="rgba(26,30,36,0.05)" stroke="#5B6570" stroke-width="1"/>
+<text x="536" y="76" fill="#1A1E24" font-size="16" font-weight="600" font-family="'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" text-anchor="middle">Index queue</text>
+<text x="536" y="96" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle">ext:solr's table</text>
+
+<rect x="656" y="40" width="176" height="72" rx="6" fill="#FFFFFF"/>
+<rect x="656" y="40" width="176" height="72" rx="6" fill="rgba(26,30,36,0.03)" stroke="rgba(26,30,36,0.30)" stroke-width="1"/>
+<text x="744" y="76" fill="#1A1E24" font-size="16" font-weight="600" font-family="'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" text-anchor="middle">Solr</text>
+<text x="744" y="96" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" text-anchor="middle">the search index</text>
+
+<line x1="32" y1="688" x2="848" y2="688" stroke="rgba(26,30,36,0.12)" stroke-width="0.8"/>
+<text x="32" y="708" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace" letter-spacing="0.14em">LEGEND</text>
+<line x1="136" y1="704" x2="176" y2="704" stroke="#1A1E24" stroke-width="2"/>
+<text x="188" y="708" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace">CALL</text>
+<line x1="264" y1="704" x2="304" y2="704" stroke="#5B6570" stroke-width="1.2" stroke-dasharray="5,4"/>
+<text x="316" y="708" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace">ANSWER</text>
+<line x1="424" y1="704" x2="464" y2="704" stroke="#ED6D05" stroke-width="2"/>
+<text x="476" y="708" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace">EDITOR IS DONE</text>
+<line x1="640" y1="704" x2="680" y2="704" stroke="#5B6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#efs-t-open)"/>
+<text x="696" y="708" fill="#5B6570" font-size="12" font-family="'Source Code Pro',ui-monospace,SFMono-Regular,Menlo,monospace">THE SCHEDULER</text>
+</svg>
