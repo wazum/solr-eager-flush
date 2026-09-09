@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- A Solr connection that cannot be resolved or does not answer the ping is logged as a warning naming the root, instead of being skipped silently.
+
+### Changed
+- The functional test suite no longer needs a raised `memory_limit`; it is set in the PHPUnit configuration.
+
 ## [1.5.1] - 2026-07-21
 
 ### Fixed
