@@ -43,6 +43,7 @@ The flush runs at the end of the same, already-booted request — but whether th
 
 - **PHP-FPM** — the response is released to the editor first ([`fastcgi_finish_request()`](https://www.php.net/manual/en/function.fastcgi-finish-request.php)), so the save returns immediately and indexing happens afterwards, with no waiting. This is the case the extension is built for, and what most TYPO3 setups run (nginx or Apache in front of PHP-FPM).
 - **Other per-request SAPIs** (Apache `mod_php`, CGI) — the flush still runs at the end of the request, but the connection can't be released early, so the editor waits for it much as they would for inline indexing.
+- **CLI** (`typo3` commands, `scheduler:run`, imports) — no eager flush. There is no request to defer to and nobody waiting for a response, so the queued items are left to the Index Queue Worker. This also keeps a bulk import from indexing once per saved record.
 
 > [!NOTE]
 > Even when the response is released early, the PHP process stays busy until the flush finishes — it counts against your FPM worker pool ([`pm.max_children`](https://www.php.net/manual/en/install.fpm.configuration.php)). The gates and `deltaMax` keep each flush bounded.

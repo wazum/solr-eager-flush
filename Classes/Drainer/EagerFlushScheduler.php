@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\SolrEagerFlush\Drainer;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Wazum\SolrEagerFlush\Runtime\DeferredExecution;
 use Wazum\SolrEagerFlush\Runtime\ResponseDetacher;
@@ -20,12 +21,14 @@ class EagerFlushScheduler
         private readonly DeferredExecution $deferredExecution,
         private readonly ResponseDetacher $responseDetacher,
         private readonly EagerFlushRunner $runner,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public function schedule(int $rootPageId): void
     {
+        // Inline indexing would read records before DataHandler writes their relations, and run once per saved record.
         if (!$this->deferredExecution->isSupported()) {
-            $this->runner->run($rootPageId);
+            $this->logger->debug('eager-flush skipped', ['reason' => 'deferral-unsupported', 'root' => $rootPageId]);
 
             return;
         }

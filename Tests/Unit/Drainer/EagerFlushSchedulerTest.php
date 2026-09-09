@@ -7,6 +7,9 @@ namespace Wazum\SolrEagerFlush\Tests\Unit\Drainer;
 use Closure;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LogLevel;
+use Stringable;
 use Wazum\SolrEagerFlush\Drainer\EagerFlushRunner;
 use Wazum\SolrEagerFlush\Drainer\EagerFlushScheduler;
 use Wazum\SolrEagerFlush\Runtime\DeferredExecution;
@@ -15,17 +18,24 @@ use Wazum\SolrEagerFlush\Runtime\ResponseDetacher;
 final class EagerFlushSchedulerTest extends TestCase
 {
     #[Test]
-    public function runsTheFlushImmediatelyWhenDeferralIsUnsupported(): void
+    public function leavesTheWorkToTheSchedulerWhenDeferralIsUnsupported(): void
     {
         $runRoots = [];
+        $logRecords = [];
         $scheduler = $this->buildScheduler(
             deferralSupported: false,
             runRoots: $runRoots,
+            logRecords: $logRecords,
         );
 
         $scheduler->schedule(7);
 
-        self::assertSame([7], $runRoots, 'Without deferral support the flush must run synchronously');
+        self::assertSame([], $runRoots, 'Without deferral the flush must not run inside the save');
+        self::assertSame(
+            [[LogLevel::DEBUG, 'eager-flush skipped', ['reason' => 'deferral-unsupported', 'root' => 7]]],
+            $logRecords,
+            'The skipped root must be traceable',
+        );
     }
 
     #[Test]
@@ -146,6 +156,7 @@ final class EagerFlushSchedulerTest extends TestCase
     /**
      * @param list<int> $runRoots
      * @param list<string>|null $events
+     * @param list<array{0: string, 1: string, 2: array<string, mixed>}>|null $logRecords
      */
     private function buildScheduler(
         bool $deferralSupported,
@@ -153,6 +164,7 @@ final class EagerFlushSchedulerTest extends TestCase
         ?Closure $onDefer = null,
         bool $detached = true,
         ?array &$events = null,
+        ?array &$logRecords = null,
     ): EagerFlushScheduler {
         return new EagerFlushScheduler(
             deferredExecution: new class($deferralSupported, $onDefer) implements DeferredExecution {
@@ -206,6 +218,25 @@ final class EagerFlushSchedulerTest extends TestCase
                     $this->runRoots[] = $rootPageId;
                     if (null !== $this->events) {
                         $this->events[] = 'run:' . $rootPageId;
+                    }
+                }
+            },
+            logger: new class($logRecords) extends AbstractLogger {
+                /**
+                 * @param list<array{0: string, 1: string, 2: array<string, mixed>}>|null $logRecords
+                 */
+                public function __construct(
+                    private ?array &$logRecords,
+                ) {}
+
+                /**
+                 * @param string|Stringable $message
+                 * @param array<string, mixed> $context
+                 */
+                public function log($level, $message, array $context = []): void
+                {
+                    if (null !== $this->logRecords) {
+                        $this->logRecords[] = [(string) $level, (string) $message, $context];
                     }
                 }
             },

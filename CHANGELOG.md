@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A Solr connection that cannot be resolved or does not answer the ping is logged as a warning naming the root, instead of being skipped silently.
 
 ### Changed
+- Under the CLI the flush no longer runs inline; the items are left to the Index Queue Worker. `DataHandler` fires the triggering event before it writes MM relations, and ext:solr emits one event per record, so a bulk import ran a full index cycle per record.
 - The functional test suite no longer needs a raised `memory_limit`; it is set in the PHPUnit configuration.
 
 ## [1.5.1] - 2026-07-21
