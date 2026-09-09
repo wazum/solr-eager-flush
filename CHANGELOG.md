@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-09
+
 ### Fixed
 - A save that lands while its item is being indexed is no longer swallowed. `indexed` is only stamped while the item still carries the change time that was indexed, otherwise the item stays pending for the next run. Two saves within the same second remain indistinguishable.
 - The scheduler-activity gate now detects a running Index Queue Worker on TYPO3 14, where the task class is stored in `tasktype` instead of `serialized_task_object`.
@@ -96,7 +98,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Compatibility
 - TYPO3 13.4 LTS and 14.3+, PHP 8.2–8.4. On TYPO3 14, `apache-solr-for-typo3/solr` is currently a pre-release.
 
-[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.4.0...HEAD
+[Unreleased]: https://github.com/wazum/solr-eager-flush/compare/1.6.0...HEAD
+[1.6.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.6.0
+[1.5.1]: https://github.com/wazum/solr-eager-flush/releases/tag/1.5.1
+[1.5.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.5.0
 [1.4.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.4.0
 [1.3.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.3.0
 [1.2.0]: https://github.com/wazum/solr-eager-flush/releases/tag/1.2.0
