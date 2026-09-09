@@ -1,5 +1,13 @@
 base: 'https://solreagerflushtest.example.org/'
 rootPageId: 1
+# Port 65534 is expected to refuse the connection, so indexing fails at the Solr
+# boundary instead of waiting for a timeout.
+solr_enabled_read: true
+solr_scheme_read: http
+solr_host_read: 127.0.0.1
+solr_port_read: 65534
+solr_path_read: /solr/
+solr_core_read: core_en
 languages:
     -
         title: English

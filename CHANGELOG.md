@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - A per-site lock, so two requests no longer flush the same site at once and duplicate its Solr commits. A locked site logs a skip with the reason `already-flushing`.
+- Functional coverage for the real ext:solr `IndexService`, using a Solr that refuses the connection, so no running Solr is needed.
 
 ## [1.5.1] - 2026-07-21
 
