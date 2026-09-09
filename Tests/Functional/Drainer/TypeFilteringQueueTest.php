@@ -62,12 +62,56 @@ final class TypeFilteringQueueTest extends AbstractFunctionalTestCase
         );
     }
 
+    #[Test]
+    public function stampsTheIndexTimeAfterIndexingAnItem(): void
+    {
+        $this->insertItem(['changed' => time() - 100]);
+        $queue = $this->queue(TypeFilterMode::Both);
+        $item = $queue->getItemsToIndex($this->siteWithRoot(1), 10)[0];
+
+        $queue->updateIndexTimeByItem($item);
+
+        self::assertGreaterThan(0, $this->indexedTimeOf((int) $item->getIndexQueueUid()));
+    }
+
+    #[Test]
+    public function leavesTheItemPendingWhenTheRecordWasSavedAgainWhileItWasIndexed(): void
+    {
+        $this->insertItem(['changed' => time() - 100]);
+        $queue = $this->queue(TypeFilterMode::Both);
+        $item = $queue->getItemsToIndex($this->siteWithRoot(1), 10)[0];
+        $uid = (int) $item->getIndexQueueUid();
+
+        $this->saveRecordAgain($uid);
+        $queue->updateIndexTimeByItem($item);
+
+        self::assertSame(
+            0,
+            $this->indexedTimeOf($uid),
+            'The item must stay pending so the newer content still reaches Solr',
+        );
+    }
+
     private function siteWithRoot(int $rootPageId): Site
     {
         $site = $this->createStub(Site::class);
         $site->method('getRootPageId')->willReturn($rootPageId);
 
         return $site;
+    }
+
+    private function indexedTimeOf(int $uid): int
+    {
+        return (int) GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable('tx_solr_indexqueue_item')
+            ->fetchOne('SELECT indexed FROM tx_solr_indexqueue_item WHERE uid = ?', [$uid]);
+    }
+
+    private function saveRecordAgain(int $uid): void
+    {
+        GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable('tx_solr_indexqueue_item')
+            ->update('tx_solr_indexqueue_item', ['changed' => time()], ['uid' => $uid]);
     }
 
     /**

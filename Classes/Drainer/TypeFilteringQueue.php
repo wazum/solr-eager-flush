@@ -6,7 +6,9 @@ namespace Wazum\SolrEagerFlush\Drainer;
 
 use ApacheSolrForTypo3\Solr\Domain\Site\Site;
 use ApacheSolrForTypo3\Solr\IndexQueue\Item;
+use ApacheSolrForTypo3\Solr\IndexQueue\ItemInterface;
 use ApacheSolrForTypo3\Solr\IndexQueue\Queue;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Wazum\SolrEagerFlush\TypeFilter\TypeFilterMode;
@@ -30,6 +32,27 @@ final class TypeFilteringQueue extends Queue
             static fn (array $record): Item => GeneralUtility::makeInstance(Item::class, $record),
             $this->eligibleItemRecords($site->getRootPageId(), $limit),
         );
+    }
+
+    /**
+     * A save landing during indexing bumps `changed`; stamping `indexed` anyway would push the
+     * item past the pending predicate and hide the newer content. Saves within the same second
+     * are indistinguishable.
+     */
+    public function updateIndexTimeByItem(ItemInterface $item): int
+    {
+        $queryBuilder = $this->connectionPool
+            ->getConnectionForTable('tx_solr_indexqueue_item')
+            ->createQueryBuilder();
+
+        return $queryBuilder
+            ->update('tx_solr_indexqueue_item')
+            ->set('indexed', (string) time(), true, Connection::PARAM_INT)
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($item->getIndexQueueUid(), Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('changed', $queryBuilder->createNamedParameter($item->getChanged(), Connection::PARAM_INT)),
+            )
+            ->executeStatement();
     }
 
     /**
