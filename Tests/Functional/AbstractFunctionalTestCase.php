@@ -13,7 +13,6 @@ abstract class AbstractFunctionalTestCase extends FunctionalTestCase
         'extbase',
         'fluid',
         'frontend',
-        'install',
         'reports',
         'scheduler',
         'tstemplate',
